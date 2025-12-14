@@ -59,23 +59,22 @@ char* read_line() {
 
 }
 
-// Tokenizes given line using the delimiters macro.
+// Tokenizes given line using the delimiters macro. 
 char** parse_line(char* line) {
 	int buffer_size = TOK_BUFSIZE;
 	int position = 0;
 	char** tokens = malloc(buffer_size * sizeof(char*));
 	char* token;
 	
-	printf("address of tokens: %p\n", tokens);
 	if (tokens == NULL) {
 		printf("koopa parse line error");
 		exit(EXIT_FAILURE);
 	}
 	
+	// Get token. Also note that token has implicit null terminator at the end of it. So ls, for example, actually is 3 bytes
 	token = strtok(line, TOK_DELIMS);
 	while (token != NULL) {
 		tokens[position] = token;
-		printf("tokens[%d]: %s\n", position, tokens[position]);
 		position++;
 
 		// Request more buffer space if needed
@@ -92,36 +91,46 @@ char** parse_line(char* line) {
 		token = strtok(NULL, TOK_DELIMS);
 	}
         
-	// Set the final character to null
+	// Set the final character to null and return the array
 	tokens[position] = NULL;
-	printf("first arg: %s\n", tokens[0]);
 	return tokens; 
 
 
 }
 
+// Initializes process specified by the first arg, returns 1 when process terminates.
 int execute(char** args) {
-	pid_t pid, wpid; 
+	pid_t pid; 
 	int status;
-
+	
+	// Create child, store pid
 	pid = fork();
 
 	if (pid == 0) {
-		// child process
-		printf(args[0]);
+		// Child process
+
+		// If exec returns AT ALL, exit failure. Note that if exec is successful, it returns nothing.
 		if (execvp(args[0], args) == -1) {
 			perror("execvp");
 		}
 		
 		exit(EXIT_FAILURE);
+
 	} else if (pid < 0) {
-		printf("koopa fork error\n");	
+		
+		// Fork failure if it returns negative, so update errno and show error
+		perror("koopa");
+
 	} else {
-		// parent process logic
+		// Parent process
+
 		do {
-			wpid = waitpid(pid, &status, WUNTRACED);
+			// Wait for child process to terminate or stop. If terminated, break, otherwise, continue.
+			waitpid(pid, &status, WUNTRACED);
+
 		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
 	}
+
 	return 1;
 }
 void shell_loop() {
@@ -146,7 +155,6 @@ void shell_loop() {
 
 	} while (status);
 	
-	exit(EXIT_SUCCESS);
 	
 }
 
@@ -154,6 +162,6 @@ void shell_loop() {
 int main() {
 
 	shell_loop();
-	return 0;
 
+	exit(EXIT_SUCCESS);
 }
