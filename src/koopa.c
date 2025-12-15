@@ -4,7 +4,6 @@
 
 #include "input_handler.h"
 #include "execute.h"
-#include "built_ins.h"
 
 void shell_loop() {
 	char* line;
