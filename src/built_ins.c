@@ -4,6 +4,11 @@ char* built_ins[] = {
 	"exit"
 };
 
+int (*built_in_funcs[]) (char**) = {
+	&kpa_exit
+};
+
+
 // EXAMPLE: if only one built-in, that is ONE pointer, so 8 bytes. 8 / 8 = 1
 int num_built_ins() {
 	return sizeof(built_ins) / sizeof(char*);

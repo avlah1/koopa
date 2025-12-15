@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include "built_ins.h"
 
 // Initializes process specified by the first arg, returns 1 when process terminates.
 int launch(char** args) {
@@ -48,7 +49,13 @@ int launch(char** args) {
 
 
 int execute(char** args) {
-	
+	int n = num_built_ins();
+
+	for (int i = 0; i < n; i++) {
+		if (strcmp(args[0], built_ins[i]) == 0) {
+			return (*built_in_funcs[i](args);
+		}
+	}
 
 	// If not a built-in, call launch and return status
 	return launch(args);
