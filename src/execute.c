@@ -15,7 +15,11 @@ int execute(char** args) {
 	if (pid == 0) {
 		// Child process
 
-		// If exec returns AT ALL, exit failure. Note that if exec is successful, it returns nothing.
+		// Check for no commands given, should exit success rather than seg fault
+		if (args[0] == NULL) {
+			exit(EXIT_SUCCESS);
+		}
+
 		if (execvp(args[0], args) == -1) {
 			perror("execvp");
 		}
