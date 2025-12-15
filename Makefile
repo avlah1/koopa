@@ -1,0 +1,13 @@
+all: koopa
+
+koopa: koopa.o input_handler.o execute.o
+	gcc -g -Wall -o koopa koopa.o input_handler.o execute.o
+
+koopa.o: src/koopa.c
+	gcc -g -Wall -Iinclude -c src/koopa.c -o koopa.o
+
+input_handler.o: src/input_handler.c
+	gcc -g -Wall -Iinclude -c src/input_handler.c -o input_handler.o
+
+execute.o: src/execute.c
+	gcc -g -Wall -Iinclude -c src/execute.c -o execute.o
