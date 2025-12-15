@@ -4,8 +4,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+
 // Initializes process specified by the first arg, returns 1 when process terminates.
-int execute(char** args) {
+int launch(char** args) {
 	pid_t pid; 
 	int status;
 	
@@ -43,4 +44,12 @@ int execute(char** args) {
 	}
 
 	return 1;
+}
+
+
+int execute(char** args) {
+	
+
+	// If not a built-in, call launch and return status
+	return launch(args);
 }
