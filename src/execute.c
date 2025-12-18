@@ -24,7 +24,7 @@ int launch(char** args) {
 		// Child process
 		//examine args. look for > and split
 		
-		char** filename = split_args(args);
+		char** filename = get_redirect_dest(args);
 		
 		// Handle output redirection
 		if (filename) {

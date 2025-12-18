@@ -12,20 +12,18 @@
 #define TOK_DELIMS " \n\t" 
 
 
-//Split args func?
-char** split_args(char** args) {
+//We might want to put this in its own src file. Maybe a redirection.c file?
+// Looks for the presence of > which signifies output redirection. If found, split the args array at that index, and return the address of the next arg in the array which will be used as the destination of the output
+char** get_redirect_dest(char** args) {
 	int i = 0;
 
 	while (args[i] != NULL) {
-		printf("Comparing args[%d]\n", i);
 		if (strcmp(args[i], ">") == 0) {
-			printf("found a redirection at %d\n", i);
 			args[i] = NULL;
 			return &args[i+1];
 		}
 		i++;
 	}
-	printf("Returning NULL from split_args\n");
 	return NULL;
 }
 
