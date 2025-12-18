@@ -9,7 +9,7 @@ koopa.o: src/koopa.c
 input_handler.o: src/input_handler.c
 	gcc -g -Wall -Iinclude -c src/input_handler.c -o input_handler.o
 
-execute.o: src/execute.c builtins.o
+execute.o: src/execute.c builtins.o input_handler.o
 	gcc -g -Wall -Iinclude -c src/execute.c -o execute.o
 
 builtins.o: src/builtins.c
