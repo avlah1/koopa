@@ -4,8 +4,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h> 
 
 #include "builtins.h"
+#include "input_handler.h"
+
+
 
 // Initializes process specified by the first arg, returns 1 when process terminates.
 int launch(char** args) {
@@ -17,6 +22,30 @@ int launch(char** args) {
 
 	if (pid == 0) {
 		// Child process
+		//examine args. look for > and split
+		
+		char** filename = split_args(args);
+		
+		// Handle output redirection
+		if (filename) {
+			int file_desc = open(filename[0], O_CREAT | O_WRONLY | O_TRUNC, 0644);
+
+			if (file_desc == -1) {
+				perror("Error opening file");
+				//exit(EXIT_FAILURE);
+			}
+
+			//dup2
+			if (dup2(file_desc, 1) == -1) {
+			       perror("Error duplicating descriptor");
+			}
+	 		
+			// close?
+			if (close(file_desc) == -1) {
+				perror("Error closing file dsc");
+			}
+					
+		}
 
 		if (execvp(args[0], args) == -1) {
 			perror("execvp");

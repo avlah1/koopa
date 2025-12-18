@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define BUFSIZE 128
 
 // Buffer size for token buffer
@@ -9,6 +10,25 @@
 
 // Delimiters for parse_line function
 #define TOK_DELIMS " \n\t" 
+
+
+//Split args func?
+char** split_args(char** args) {
+	int i = 0;
+
+	while (args[i] != NULL) {
+		printf("Comparing args[%d]\n", i);
+		if (strcmp(args[i], ">") == 0) {
+			printf("found a redirection at %d\n", i);
+			args[i] = NULL;
+			return &args[i+1];
+		}
+		i++;
+	}
+	printf("Returning NULL from split_args\n");
+	return NULL;
+}
+
 
 // Tokenizes given line using the delimiters macro. 
 char** parse_line(char* line) {
