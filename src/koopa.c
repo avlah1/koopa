@@ -5,6 +5,7 @@
 #include "input_handler.h"
 #include "execute.h"
 
+// While status is nonzero, read line from stdin, separate line into args, then call execute to either fork or call builtin shell functions functions
 void shell_loop() {
 	char* line;
 	char** args;
@@ -14,7 +15,6 @@ void shell_loop() {
 		printf("kpa>> ");
 		
 		line = read_line();
-
 		args = parse_line(line);
 		status = execute(args);
 		
@@ -26,10 +26,8 @@ void shell_loop() {
 	
 }
 
-
 int main() {
 
 	shell_loop();
-
 	exit(EXIT_SUCCESS);
 }
