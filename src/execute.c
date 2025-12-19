@@ -6,11 +6,20 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h> 
+#include <errno.h>
 
 #include "builtins.h"
 #include "input_handler.h"
 
-
+#define SYS_ERR_CHECK(X) do { \
+	int retval = (X); \
+	if (retval == -1) { \
+		fprintf(stderr, "syscall error = %s\n", strerror(errno)); \
+		exit(EXIT_FAILURE); \
+	} \
+} while(0)
+			
+		
 
 // Initializes process specified by the first arg, returns 1 when process terminates.
 int launch(char** args) {
@@ -25,8 +34,19 @@ int launch(char** args) {
 		//examine args. look for > and split
 		
 		char** filename = get_redirect_dest(args);
-		
-		// Handle output redirection
+		SYS_ERR_CHECK(open("/this/file/does/not/exist", O_RDONLY));
+		if (filename) {
+			int file_desc = open(filename[0], O_CREAT | O_WRONLY | O_TRUNC, 0644);
+			
+			SYS_ERR_CHECK(file_desc);
+
+			SYS_ERR_CHECK(dup2(file_desc, 1));
+
+			SYS_ERR_CHECK(close(file_desc));
+
+		}
+			
+		/*
 		if (filename) {
 			int file_desc = open(filename[0], O_CREAT | O_WRONLY | O_TRUNC, 0644);
 
@@ -46,7 +66,8 @@ int launch(char** args) {
 			}
 					
 		}
-
+		*/
+		
 		if (execvp(args[0], args) == -1) {
 			perror("execvp");
 		}
