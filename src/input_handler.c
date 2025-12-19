@@ -27,20 +27,20 @@ char** get_redirect_dest(char** args) {
 	return NULL;
 }
 
-
 // Tokenizes given line using the delimiters macro. 
 char** parse_line(char* line) {
 	int buffer_size = TOK_BUFSIZE;
 	int position = 0;
 	char** tokens = malloc(buffer_size * sizeof(char*));
 	char* token;
-	
+
+	// Parent process will exit failure on allocator fail	
 	if (!tokens) {
 		fprintf(stderr, "error: allocator fail while parse_line\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	// Get token. Also note that token has implicit null terminator at the end of it. So ls, for example, actually is 3 bytes
+	// Get token and add to args array
 	token = strtok(line, TOK_DELIMS);
 	while (token != NULL) {
 		tokens[position] = token;
@@ -65,7 +65,7 @@ char** parse_line(char* line) {
 	return tokens; 
 }
 
-// Reads characters from stdin, placing each character in the dynamically allocated buffer. When new line character is read (ie the command is terminated by the user), place a null character and return buffer. 
+// Reads characters from stdin, placing each character in the buffer. When new line character is read (ie the command is terminated by the user), place a null character and return buffer. 
 char* read_line() {
 	int buffer_size = BUFSIZE;
 	char* buffer = malloc(sizeof(char) * buffer_size);
@@ -100,7 +100,6 @@ char* read_line() {
 			}
 		}
 	}
-
 
 }
 
