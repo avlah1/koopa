@@ -36,7 +36,7 @@ char** parse_line(char* line) {
 	char* token;
 	
 	if (!tokens) {
-		printf("koopa parse line error");
+		fprintf(stderr, "error: allocator fail while parse_line\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -51,7 +51,7 @@ char** parse_line(char* line) {
 			buffer_size += TOK_BUFSIZE;
 			tokens = realloc(tokens, buffer_size * sizeof(char*));
 			if (!tokens) {
-				printf("koopa parse line reallocate error\n");
+				fprintf(stderr, "error: allocator fail while parse_line\n");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -73,7 +73,7 @@ char* read_line() {
 	int c;
 
 	if (!buffer) {
-		printf("koopa line reader allocation error");
+		fprintf(stderr, "error: allocator fail during read line\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -95,7 +95,7 @@ char* read_line() {
 			buffer_size += BUFSIZE;
 			buffer = realloc(buffer, buffer_size);
 			if (!buffer) {
-				printf("koopa line reader reallocation error");
+				fprintf(stderr, "error: allocator fail during read line\n");
 				exit(EXIT_FAILURE);
 			}
 		}
