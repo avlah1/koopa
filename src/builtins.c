@@ -32,6 +32,6 @@ int kpa_cd(char** args) {
 }
 
 int kpa_exit(char**) {
-	return 1;
+	return 0;
 }
 
