@@ -14,7 +14,6 @@ void shell_loop() {
 		printf("kpa>> ");
 		
 		line = read_line();
-	        printf("Line: %s\n", line);
 
 		args = parse_line(line);
 		status = execute(args);
