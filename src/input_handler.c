@@ -35,7 +35,7 @@ char** parse_line(char* line) {
 	char** tokens = malloc(buffer_size * sizeof(char*));
 	char* token;
 	
-	if (tokens == NULL) {
+	if (!tokens) {
 		printf("koopa parse line error");
 		exit(EXIT_FAILURE);
 	}
