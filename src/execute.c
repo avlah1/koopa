@@ -10,17 +10,8 @@
 
 #include "builtins.h"
 #include "input_handler.h"
+#include "redirect.h"
 
-// Macro function for syscall error detection
-#define SYS_ERR_CHECK(X) do { \
-	int retval = (X); \
-	if (retval == -1) { \
-		fprintf(stderr, "syscall error = %s\n", strerror(errno)); \
-		exit(EXIT_FAILURE); \
-	} \
-} while(0)
-			
-		
 
 // Initializes child process specified by arg at index 0. Child process exits on failure.
 int launch(char** args) {
@@ -31,22 +22,10 @@ int launch(char** args) {
 
 	if (pid == 0) {
 		// CHILD PROCESS
-		
-		// Look for output redirection symbol	
-		char** filename = get_redirect_dest(args);
-		
-		if (filename) {
+	       
+	       	// Check to see if a redirection symbol is present in the args list, if it is, do stuff (see redirect.c). Otherwise, don't do stuff. In either case, call execvp. 
+		find_redirection(args);	
 
-			// Open file, redirect stdout, close fd returned by open, checking for syscall errors along the way.
-			int file_desc = open(filename[0], O_CREAT | O_WRONLY | O_TRUNC, 0644);
-			
-			SYS_ERR_CHECK(file_desc);
-
-			SYS_ERR_CHECK(dup2(file_desc, 1));
-
-			SYS_ERR_CHECK(close(file_desc));
-		}
-		
 		// Opted not to use the macro here as this syscall operates a bit differently than the others that are in the previous conditional block. That is, if execv returns at all, we should exit. 
 		if (execvp(args[0], args) == -1) {
 			fprintf(stderr, "execvp error = %s\n", strerror(errno));
