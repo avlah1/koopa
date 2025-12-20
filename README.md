@@ -1,12 +1,11 @@
-# koopa
+# Koopa
 
-koopa is a Unix-like shell. 
+A simple Unix shell written in C for learning systems programming.
 
 Features:
 - Execute standard Unix commands
 - Built-in commands include cd and exit 
-- Append redirection using >> supported
-- Clobber redirection using > supported
+- Output redirection using > and >>
 - Basic error handling
 
 Features coming soon
@@ -14,8 +13,13 @@ Features coming soon
 - Colored text and shell output formatting improvments
 
 Building/Installation
-- To build using the provided Makefile, run make
-- To initialize the shell after building, run ./koopa
+- GCC and Make required
+- To build: make
+- To run: ./koopa
+
+Example session
+<img width="427" height="327" alt="image" src="https://github.com/user-attachments/assets/07337ab6-8784-4516-ac85-40513a11a2e8" />
+
 
 
 
