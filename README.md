@@ -17,7 +17,11 @@ Building/Installation
 - To build: make
 - To run: ./koopa
 
-Example session
+
+An example session:
+
+
+
 <img width="427" height="327" alt="image" src="https://github.com/user-attachments/assets/07337ab6-8784-4516-ac85-40513a11a2e8" />
 
 
