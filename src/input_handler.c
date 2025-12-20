@@ -12,21 +12,6 @@
 #define TOK_DELIMS " \n\t" 
 
 
-//We might want to put this in its own src file. Maybe a redirection.c file?
-// Looks for the presence of > which signifies output redirection. If found, split the args array at that index, and return the address of the next arg in the array which will be used as the destination of the output
-char** get_redirect_dest(char** args) {
-	int i = 0;
-
-	while (args[i] != NULL) {
-		if (strcmp(args[i], ">") == 0) {
-			args[i] = NULL;
-			return &args[i+1];
-		}
-		i++;
-	}
-	return NULL;
-}
-
 // Tokenizes given line using the delimiters macro. 
 char** parse_line(char* line) {
 	int buffer_size = TOK_BUFSIZE;
