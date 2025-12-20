@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define BUFSIZE 128
 
 // Buffer size for token buffer
@@ -10,19 +11,21 @@
 // Delimiters for parse_line function
 #define TOK_DELIMS " \n\t" 
 
+
 // Tokenizes given line using the delimiters macro. 
 char** parse_line(char* line) {
 	int buffer_size = TOK_BUFSIZE;
 	int position = 0;
 	char** tokens = malloc(buffer_size * sizeof(char*));
 	char* token;
-	
-	if (tokens == NULL) {
-		printf("koopa parse line error");
+
+	// Parent process will exit failure on allocator fail	
+	if (!tokens) {
+		fprintf(stderr, "error: allocator fail while parse_line\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	// Get token. Also note that token has implicit null terminator at the end of it. So ls, for example, actually is 3 bytes
+	// Get token and add to args array
 	token = strtok(line, TOK_DELIMS);
 	while (token != NULL) {
 		tokens[position] = token;
@@ -33,7 +36,7 @@ char** parse_line(char* line) {
 			buffer_size += TOK_BUFSIZE;
 			tokens = realloc(tokens, buffer_size * sizeof(char*));
 			if (!tokens) {
-				printf("koopa parse line reallocate error\n");
+				fprintf(stderr, "error: allocator fail while parse_line\n");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -47,7 +50,7 @@ char** parse_line(char* line) {
 	return tokens; 
 }
 
-// Reads characters from stdin, placing each character in the dynamically allocated buffer. When new line character is read (ie the command is terminated by the user), place a null character and return buffer. 
+// Reads characters from stdin, placing each character in the buffer. When new line character is read (ie the command is terminated by the user), place a null character and return buffer. 
 char* read_line() {
 	int buffer_size = BUFSIZE;
 	char* buffer = malloc(sizeof(char) * buffer_size);
@@ -55,7 +58,7 @@ char* read_line() {
 	int c;
 
 	if (!buffer) {
-		printf("koopa line reader allocation error");
+		fprintf(stderr, "error: allocator fail during read line\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -77,12 +80,11 @@ char* read_line() {
 			buffer_size += BUFSIZE;
 			buffer = realloc(buffer, buffer_size);
 			if (!buffer) {
-				printf("koopa line reader reallocation error");
+				fprintf(stderr, "error: allocator fail during read line\n");
 				exit(EXIT_FAILURE);
 			}
 		}
 	}
-
 
 }
 

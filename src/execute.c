@@ -4,33 +4,40 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h> 
+#include <errno.h>
 
 #include "builtins.h"
+#include "input_handler.h"
+#include "redirect.h"
 
-// Initializes process specified by the first arg, returns 1 when process terminates.
+
+// Initializes child process specified by arg at index 0. Child process exits on failure.
 int launch(char** args) {
 	pid_t pid; 
 	int status;
 	
-	// Create child, store pid
 	pid = fork();
 
 	if (pid == 0) {
-		// Child process
+		// CHILD PROCESS
+	       
+	       	// Check to see if a redirection symbol is present in the args list, if it is, do stuff (see redirect.c). Otherwise, don't do stuff. In either case, call execvp. 
+		find_redirection(args);	
 
+		// Opted not to use the macro here as this syscall operates a bit differently than the others that are in the previous conditional block. That is, if execv returns at all, we should exit. 
 		if (execvp(args[0], args) == -1) {
-			perror("execvp");
+			fprintf(stderr, "execvp error = %s\n", strerror(errno));
 		}
 		
 		exit(EXIT_FAILURE);
 
 	} else if (pid < 0) {
-		
-		// Fork failure if it returns negative, so update errno and show error
 		perror("koopa");
 
 	} else {
-		// Parent process
+		// PARENT PROCESS
 
 		do {
 			// Wait for child process to terminate or stop. If terminated, break, otherwise, continue.
@@ -43,6 +50,7 @@ int launch(char** args) {
 	return 1;
 }
 
+// An entry point to detect whether the given arg in index 0 is built in, or if forking is required.
 int execute(char** args) {
 	if (args[0] == NULL) {
 		return 1;      
