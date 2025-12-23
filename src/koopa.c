@@ -4,6 +4,7 @@
 
 #include "input_handler.h"
 #include "execute.h"
+#include "colors.h"
 
 // While status is nonzero, read line from stdin, separate line into args, then call execute to either fork or call builtin shell functions functions
 void shell_loop() {
@@ -12,7 +13,7 @@ void shell_loop() {
         int status;
 	
 	do {
-		printf("kpa>> ");
+		printf(COLOR_GREEN"kpa>> "COLOR_END);
 		
 		line = read_line();
 		args = parse_line(line);
