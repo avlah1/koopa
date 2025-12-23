@@ -29,11 +29,11 @@ int (*built_ins[])(char**) = {
 int kpa_cd(char** args) {
 	// Check for the directory to change to in args[1]. If null, print error.
 	if (args[1] == NULL) {
-		fprintf(stderr, ERROR  "expected directory for cd\n");
+		fprintf(stderr, ERROR  " expected directory for cd\n");
 	} else {
 		// Call chdir with given file. If returns nonzero, print error
 		if (chdir(args[1]) != 0) {
-			fprintf(stderr, ERROR "%s\n", strerror(errno));
+			fprintf(stderr, ERROR " %s\n", strerror(errno));
 		}
 	}
 
