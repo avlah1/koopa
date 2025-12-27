@@ -13,7 +13,7 @@
 #include "redirect.h"
 #include "colors.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 // Initializes child process specified by arg at index 0. Child process exits on failure.
 int launch(char** args) {
