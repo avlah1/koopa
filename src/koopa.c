@@ -37,7 +37,7 @@ void get_current_directory() {
 		}
 	} while (ptr == NULL);
 	
-	printf("%s\n", buffer);
+	printf(COLOR_BLUE"%s"COLOR_END, buffer);
 	free(buffer);
 
 
