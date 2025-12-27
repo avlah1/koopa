@@ -10,23 +10,27 @@
 
 #define BUFSIZE 128
 
+// Helper to get current working directory and display to terminal. Originally, I wanted to put this function elsewhere but I couldn't quite find an appropriate src file to put it in. 
 void get_current_directory() {
-
+	
 	char* buffer = NULL;
 	char* ptr = NULL;
 	size_t size = BUFSIZE;
 
 	do {
+		// Allocate memory for the incoming string
 		buffer = realloc(buffer, size);
-
+		
+		// Check for faiilure to allocate, print error, then return.
 		if (buffer == NULL) {
 			fprintf(stderr, ERROR " allocator fail during gcd\n");
-			// I dont think we want a crash at this point, so maybe just return
 			return;
 		}
-
+		
+		// Call getcwd with the allocated buffer and size
 		ptr = getcwd(buffer, size);
-
+		
+		// Syscall could fail for: not enough space OR any other reason
 		if (ptr == NULL) {
 			if (errno == ERANGE) {
 				size *= 2;
@@ -35,13 +39,11 @@ void get_current_directory() {
 			       return;	
 			}
 		}
+
 	} while (ptr == NULL);
 	
-	printf(COLOR_BLUE"%s"COLOR_END, buffer);
+	printf(COLOR_BLUE"%s>> "COLOR_END, buffer);
 	free(buffer);
-
-
-		
 }
 
 
@@ -52,7 +54,7 @@ void shell_loop() {
         int status;
 	
 	do {
-		printf(COLOR_GREEN"kpa "COLOR_END);
+		printf(COLOR_GREEN"kpa:"COLOR_END);
 		get_current_directory();
 		line = read_line();
 		args = parse_line(line);
