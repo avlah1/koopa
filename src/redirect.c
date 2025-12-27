@@ -46,7 +46,7 @@ char** get_redirect_dest(char** args) {
 void find_redirection(char** args) {
 	
 	char** filename = get_redirect_dest(args);
-
+        
 	if (filename) {
 		// ALL THE SYSCALLS
 		int file_desc = open(filename[0], open_flags, 0644);

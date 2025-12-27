@@ -9,6 +9,7 @@
 #include "colors.h"
 
 #define BUFSIZE 128
+#define DEBUG 1
 
 // Helper to get current working directory and display to terminal. Originally, I wanted to put this function elsewhere but I couldn't quite find an appropriate src file to put it in. 
 void get_current_directory() {
@@ -54,6 +55,17 @@ void shell_loop() {
         int status;
 	
 	do {
+		if (DEBUG) {
+			printf("Parent stdout is a tty: %d\n", isatty(STDOUT_FILENO));
+			char* term = getenv("TERM");
+			if (term != NULL) {
+				printf("Parent TERM: %s\n", term);
+			} else {
+				printf("TERM environment variable not found in parent\n");
+			}
+		}	
+
+
 		printf(COLOR_GREEN"kpa:"COLOR_END);
 		get_current_directory();
 		line = read_line();
