@@ -9,7 +9,7 @@
 #include "colors.h"
 
 #define BUFSIZE 128
-#define DEBUG 1
+#define DEBUG 0
 
 // Helper to get current working directory and display to terminal. Originally, I wanted to put this function elsewhere but I couldn't quite find an appropriate src file to put it in. 
 void get_current_directory() {
