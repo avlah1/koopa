@@ -69,9 +69,13 @@ void shell_loop() {
 		printf(COLOR_GREEN"kpa:"COLOR_END);
 		get_current_directory();
 		line = read_line();
+		
+		printf("line: %s\n", line);
 		args = parse_line(line);
+//		printf("%s %s %s\n", args[0], args[1], args[2]);
 		status = execute(args);
 		
+		printf("args[0]: %s, args[1]: %s\n", args[0], args[1]);	
 		free(line);
 		free(args);
 
