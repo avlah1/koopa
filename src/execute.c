@@ -13,8 +13,6 @@
 #include "redirect.h"
 #include "colors.h"
 
-#define DEBUG 0
-
 // Initializes child process specified by arg at index 0. Child process exits on failure.
 int launch(char** args) {
 	pid_t pid; 
@@ -25,22 +23,10 @@ int launch(char** args) {
 	if (pid == 0) {
 		// CHILD PROCESS
 
-		if (DEBUG) {
-			char* term = getenv("TERM");
-			if (term != NULL) {
-				printf("Child TERM: %s\n", term);
-			} else {
-				printf("TERM environment variable not found for child process\n");
-			}
-		}
-
 	       	// Check to see if a redirection symbol is present in the args list, if it is, do stuff (see redirect.c). Otherwise, don't do stuff. In either case, call execvp. 
 		find_redirection(args);	
 
 		// Opted not to use the macro here as this syscall operates a bit differently than the others that are in the previous conditional block. That is, if execv returns at all, we should exit. 
-		if (DEBUG) {
-			printf("Child is a tty: %d\n", isatty(1));	       
-		}	
 		
 		if (execvp(args[0], args) == -1) {
 			fprintf(stderr, ERROR "%s\n", strerror(errno));
