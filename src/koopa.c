@@ -37,7 +37,7 @@ void get_current_directory() {
 				size *= 2;
 			} else {
 				fprintf(stderr, ERROR "%s\n", strerror(errno));
-			       return;	
+			        return;	
 			}
 		}
 
@@ -55,30 +55,16 @@ void shell_loop() {
         int status;
 	
 	do {
-		if (DEBUG) {
-			printf("Parent stdout is a tty: %d\n", isatty(STDOUT_FILENO));
-			char* term = getenv("TERM");
-			if (term != NULL) {
-				printf("Parent TERM: %s\n", term);
-			} else {
-				printf("TERM environment variable not found in parent\n");
-			}
-		}	
-
-
 		printf(COLOR_GREEN"kpa:"COLOR_END);
 		get_current_directory();
+		
 		line = read_line();
-		
-		printf("line: %s\n", line);
 		args = parse_line(line);
-//		printf("%s %s %s\n", args[0], args[1], args[2]);
-		status = execute(args);
 		
-		printf("args[0]: %s, args[1]: %s\n", args[0], args[1]);	
+		status = execute(args);
 		free(line);
 		free(args);
-
+	
 	} while (status);
 	
 	
