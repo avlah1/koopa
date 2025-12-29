@@ -3,6 +3,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "colors.h"
 // A file for built in shell functions that do not necessitate forking.
 
 int kpa_exit(char**);
@@ -28,11 +29,11 @@ int (*built_ins[])(char**) = {
 int kpa_cd(char** args) {
 	// Check for the directory to change to in args[1]. If null, print error.
 	if (args[1] == NULL) {
-		fprintf(stderr, "error: expected directory for cd\n");
+		fprintf(stderr, ERROR  " expected directory for cd\n");
 	} else {
 		// Call chdir with given file. If returns nonzero, print error
 		if (chdir(args[1]) != 0) {
-			fprintf(stderr, "error = %s\n", strerror(errno));
+			fprintf(stderr, ERROR " %s\n", strerror(errno));
 		}
 	}
 

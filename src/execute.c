@@ -11,7 +11,7 @@
 #include "builtins.h"
 #include "input_handler.h"
 #include "redirect.h"
-
+#include "colors.h"
 
 // Initializes child process specified by arg at index 0. Child process exits on failure.
 int launch(char** args) {
@@ -22,13 +22,14 @@ int launch(char** args) {
 
 	if (pid == 0) {
 		// CHILD PROCESS
-	       
+
 	       	// Check to see if a redirection symbol is present in the args list, if it is, do stuff (see redirect.c). Otherwise, don't do stuff. In either case, call execvp. 
 		find_redirection(args);	
 
 		// Opted not to use the macro here as this syscall operates a bit differently than the others that are in the previous conditional block. That is, if execv returns at all, we should exit. 
+		
 		if (execvp(args[0], args) == -1) {
-			fprintf(stderr, "execvp error = %s\n", strerror(errno));
+			fprintf(stderr, ERROR "%s\n", strerror(errno));
 		}
 		
 		exit(EXIT_FAILURE);

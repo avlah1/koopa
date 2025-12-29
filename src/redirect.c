@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "colors.h"
+
 // Global flags with options for open syscall
 int open_flags = O_CREAT | O_WRONLY | O_TRUNC;
 
@@ -12,7 +14,7 @@ int open_flags = O_CREAT | O_WRONLY | O_TRUNC;
 #define SYS_ERR_CHECK(X) do { \
 	int retval = (X); \
 	if (retval == -1) { \
-		fprintf(stderr, "syscall error = %s\n", strerror(errno)); \
+		fprintf(stderr,  ERROR "%s\n", strerror(errno)); \
 		exit(EXIT_FAILURE); \
 	} \
 } while(0)
@@ -44,7 +46,7 @@ char** get_redirect_dest(char** args) {
 void find_redirection(char** args) {
 	
 	char** filename = get_redirect_dest(args);
-
+        
 	if (filename) {
 		// ALL THE SYSCALLS
 		int file_desc = open(filename[0], open_flags, 0644);
