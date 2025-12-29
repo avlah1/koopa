@@ -42,9 +42,46 @@ char** get_redirect_dest(char** args) {
 	return NULL;
 }
 
+//output redirection
+void redirect_out(char** args) {
+	if (strcmp(args[0], ">>") == 0) {
+		open_flags = O_CREAT | O_WRONLY | O_APPEND;
+	} else {
+		open_flags = O_CREAT | O_WRONLY | O_TRUNC; 
+	}
+	args[0] = NULL;
+	int file_desc = open(args[1], open_flags, 0644);
+
+	SYS_ERR_CHECK(file_desc);
+
+	SYS_ERR_CHECK(dup2(file_desc, 1));
+
+	SYS_ERR_CHECK(close(file_desc));
+}
+
+
+void redirect_in(char** args) {
+}
 // Redirection entry point. Calls redirect dest function, and if a file was not returned, do nothing.  Otherise, we open a file, redirect stdout to new file, and close the new file.
 void find_redirection(char** args) {
+
+	// Idea: take the loop that is on lines 27-40 and move it down here. This loop will branch off into 4 different functions, one for each of the 
+	// redirection symbols: < > >> |
+	//
+	//
 	
+	int i = 0;
+	while (args[i] != NULL) {
+		if ((strcmp(args[i], ">") == 0) || strcmp(args[i], ">>") == 0) {
+			redirect_out(&args[i]);	
+		} else if (strcmp(args[i], "<<") == 0) {
+			// input redirect
+			redirect_in(&args[i]);
+		}
+		// else, do nothing
+		i++;
+	}	
+/*	
 	char** filename = get_redirect_dest(args);
         
 	if (filename) {
@@ -58,6 +95,6 @@ void find_redirection(char** args) {
 		SYS_ERR_CHECK(close(file_desc));
 	}
 
-
+*/
 }
 
