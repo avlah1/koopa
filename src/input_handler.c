@@ -9,9 +9,13 @@
 // Buffer size for token buffer
 #define TOK_BUFSIZE 64
 
+// Size for individual tokens
 #define TOKEN_SIZE 32
+
 // Delimiters for parse_line function
 #define TOK_DELIMS " \n\t" 
+
+int global_quoted = 1;
 
 char* get_token(char* str, char* delimeters) {
 	
@@ -28,7 +32,7 @@ char* get_token(char* str, char* delimeters) {
 		exit(EXIT_FAILURE);
 	}
 	
-	// Now, input string
+	// Now, handle the input string. Find where we are in the string.
 	if (str != NULL) {
 		// First call to get_token
 		next_token_start = str;
@@ -77,8 +81,8 @@ char* get_token(char* str, char* delimeters) {
 
 	if (quoted) {
 		fprintf(stderr, ERROR "argument missing balanced quotes\n");
-		free(token_start);
-		exit(EXIT_SUCCESS);
+		global_quoted = !global_quoted;
+		return NULL;
 	}
 
 	if (*str != '\0') {
@@ -100,14 +104,13 @@ char** parse_line(char* line) {
 
 	// Parent process will exit failure on allocator fail	
 	if (!tokens) {
-		fprintf(stderr, "error: allocator fail while parse_line\n");
+		fprintf(stderr, ERROR"error: allocator fail while parse_line\n");
 		exit(EXIT_FAILURE);
 	}
 	
 	// Get token and add to args array
 	token = get_token(line, TOK_DELIMS);
 	while (token != NULL) {
-		printf("token: %s\n", token);
 		tokens[position] = token;
 		position++;
 
@@ -116,7 +119,7 @@ char** parse_line(char* line) {
 			buffer_size += TOK_BUFSIZE;
 			tokens = realloc(tokens, buffer_size * sizeof(char*));
 			if (!tokens) {
-				fprintf(stderr, "error: allocator fail while parse_line\n");
+				fprintf(stderr, ERROR"allocator fail while parse_line\n");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -124,6 +127,11 @@ char** parse_line(char* line) {
 		token = get_token(NULL, TOK_DELIMS);
 	}
         
+	if (!global_quoted) {
+		global_quoted = !global_quoted;
+		position = 0;
+	}
+
 	// Set the final character to null and return the array
 	tokens[position] = NULL;
 	return tokens; 
@@ -137,7 +145,7 @@ char* read_line() {
 	int c;
 
 	if (!buffer) {
-		fprintf(stderr, "error: allocator fail during read line\n");
+		fprintf(stderr, ERROR"allocator fail during read line\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -158,7 +166,7 @@ char* read_line() {
 			buffer_size += BUFSIZE;
 			buffer = realloc(buffer, buffer_size);
 			if (!buffer) {
-				fprintf(stderr, "error: allocator fail during read line\n");
+				fprintf(stderr, ERROR"allocator fail during read line\n");
 				exit(EXIT_FAILURE);
 			}
 		}
