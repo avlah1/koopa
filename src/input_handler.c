@@ -95,8 +95,10 @@ char* get_token(char* str, char* delimeters) {
 	return token_start;
 
 }
+
 // Tokenizes given line using the delimiters macro. 
 char** parse_line(char* line) {
+
 	int buffer_size = TOK_BUFSIZE;
 	int position = 0;
 	char** tokens = malloc(buffer_size * sizeof(char*));
@@ -139,6 +141,7 @@ char** parse_line(char* line) {
 
 // Reads characters from stdin, placing each character in the buffer. When new line character is read (ie the command is terminated by the user), place a null character and return buffer. 
 char* read_line() {
+	
 	int buffer_size = BUFSIZE;
 	char* buffer = malloc(sizeof(char) * buffer_size);
 	int position = 0;
@@ -149,9 +152,9 @@ char* read_line() {
 		exit(EXIT_FAILURE);
 	}
 	
-	
 	while (1) {
 		c = getchar();
+	
 		// Detect newline character, setting character to null terminator, otherwise set to current character
 		if (c == '\n') {
 			buffer[position] = '\0';
