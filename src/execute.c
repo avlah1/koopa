@@ -9,7 +9,6 @@
 #include <errno.h>
 
 #include "builtins.h"
-#include "input_handler.h"
 #include "redirect.h"
 #include "colors.h"
 
@@ -19,14 +18,23 @@ int launch(char** args) {
 	pid_t pid; 
 	int status;
 	
+	struct command_info info;
+
+	info.redirect_out = NULL;
+	info.redirect_in = NULL;
+	info.piped = NULL;
+	
+	parse_command(args, &info);
+
 	pid = fork();
 
 	if (pid == 0) {
 		// CHILD PROCESS
-	       	// Check to see if a redirection symbol is present in the args list, if it is, do stuff (see redirect.c). Otherwise, don't do stuff. In either case, call execvp. 
-		find_redirection(args);	
-
-		// Opted not to use the macro here as this syscall operates a bit differently than the others that are in the previous conditional block. That is, if execv returns at all, we should exit. 
+		
+		if (info.redirect_out) {
+			redirect_out(args, &info);
+		}	
+		
 		if (execvp(args[0], args) == -1) {
 			fprintf(stderr, ERROR "%s\n", strerror(errno));
 		}
