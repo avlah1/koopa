@@ -36,13 +36,13 @@ void redirect_out(char** args, struct command_info* info) {
 
 	SYS_ERR_CHECK(close(file_desc));
 	
-	args[info->arg_position] = NULL;
+	info->redirect_out[0] = NULL;
+//args[info->arg_position] = NULL;
 }
 
 // Opens file to read from, redirect stdin to file. Clears the redirect token by setting position to NULL.
-void redirect_in(char** args) {
-	
-	int file_desc = open(args[1], O_RDONLY);
+void redirect_in(char** args, struct command_info* info) {
+	int file_desc = open(info->file[0], O_RDONLY);
 
 	SYS_ERR_CHECK(file_desc);
 
@@ -50,7 +50,7 @@ void redirect_in(char** args) {
 
 	SYS_ERR_CHECK(close(file_desc));
 
-	args[0] = NULL;
+	info->redirect_in[0]= NULL;
 }
 
 void parse_command(char** args, struct command_info* info) {
@@ -60,21 +60,22 @@ void parse_command(char** args, struct command_info* info) {
 
 	while (args[i] != NULL) {
 		if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0)) {
-			printf("detected >\n");
 			info->redirect_out = &args[i];
 			redirect_flag = 1;
 			break;
 		} else if (strcmp(args[i], "<") == 0) {
 			info->redirect_in = &args[i];
+			redirect_flag = 1;
 			break;
 		} else if (strcmp(args[i], "|") == 0) {
 			info->piped = &args[i];
 		}
 		i++;
 	}
-	if (redirect_flag) {
-		info->file = &args[i + 1];
-		info->arg_position = i;
-	}
+
+	if (!redirect_flag) return;
+
+	info->file = &args[i + 1];
 }
+
 

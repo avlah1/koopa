@@ -18,21 +18,20 @@ int launch(char** args) {
 	pid_t pid; 
 	int status;
 	
-	struct command_info info;
+	struct command_info info = {0};
 
-	info.redirect_out = NULL;
-	info.redirect_in = NULL;
-	info.piped = NULL;
-	
 	parse_command(args, &info);
 
 	pid = fork();
 
 	if (pid == 0) {
 		// CHILD PROCESS
-		
+	
+		// Check which fields in the struct have been updated and call the corresponding redirection function	
 		if (info.redirect_out) {
 			redirect_out(args, &info);
+		} else if (info.redirect_in) {
+			redirect_in(args, &info);
 		}	
 		
 		if (execvp(args[0], args) == -1) {
