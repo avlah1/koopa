@@ -21,8 +21,8 @@ Building/Installation
 An example session:
 
 
+<img width="799" height="330" alt="image" src="https://github.com/user-attachments/assets/c96a4969-606e-4a5b-a085-aeb783170d80" />
 
-<img width="427" height="327" alt="image" src="https://github.com/user-attachments/assets/07337ab6-8784-4516-ac85-40513a11a2e8" />
 
 
 
