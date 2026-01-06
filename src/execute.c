@@ -57,10 +57,12 @@ void redirect_in(char** args, struct command_info* info) {
 	info->redirect_in[0]= NULL;
 }
 
+// Receives a reference to the info struct for a given set of args, determines redirection/piping is necessary, and updates the struct accordingly
 void parse_command(char** args, struct command_info* info) {
 	
+	
 	int i = 0;
-	int redirect_flag = 0;
+	int redirect_flag = 0; 
 
 	while (args[i] != NULL) {
 		if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0)) {
@@ -79,10 +81,13 @@ void parse_command(char** args, struct command_info* info) {
 	}
 
 	if (!redirect_flag) return;
-
+	
+	// If redirect is necessary, update the struct with the destination/source file for redirection
 	info->file = &args[i + 1];
 }
 
+// Initializes pipe, creates two children and redirects I/O streams to appropriate file descriptor. 
+// NOTE: Obviously this function only supports a single pipe operation. Additionally, it does not support piping w/ output redirection of any kind. This function will be modified to support these actions in the future. 
 int launch_pipeline(char** args, struct command_info* info) {
 	int pipefd[2];
 
@@ -96,7 +101,6 @@ int launch_pipeline(char** args, struct command_info* info) {
 	pid1 = fork();
 
 	if (pid1 == 0) {
-		// dup2, close, exec
 		SYS_ERR_CHECK(dup2(pipefd[1], STDOUT_FILENO));
 		SYS_ERR_CHECK(close(pipefd[0]));
 		SYS_ERR_CHECK(close(pipefd[1]));
@@ -111,7 +115,6 @@ int launch_pipeline(char** args, struct command_info* info) {
 
 	pid2 = fork();
 	if (pid2 == 0) {
-		// dup2 close exec
 		SYS_ERR_CHECK(dup2(pipefd[0], STDIN_FILENO));
 		SYS_ERR_CHECK(close(pipefd[0]));
 		SYS_ERR_CHECK(close(pipefd[1]));
