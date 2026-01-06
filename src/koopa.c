@@ -11,7 +11,7 @@
 #define BUFSIZE 128
 #define DEBUG 0
 
-// Helper to get current working directory and display to terminal. Originally, I wanted to put this function elsewhere but I couldn't quite find an appropriate src file to put it in. 
+// Helper to get current working directory and display it to the terminal.
 void get_current_directory() {
 	
 	char* buffer = NULL;
@@ -22,7 +22,7 @@ void get_current_directory() {
 		// Allocate memory for the incoming string
 		buffer = realloc(buffer, size);
 		
-		// Check for faiilure to allocate, print error, then return.
+		// Check for failure to allocate, print error, then return.
 		if (buffer == NULL) {
 			fprintf(stderr, ERROR " allocator fail during gcd\n");
 			return;
@@ -31,7 +31,7 @@ void get_current_directory() {
 		// Call getcwd with the allocated buffer and size
 		ptr = getcwd(buffer, size);
 		
-		// Syscall could fail for: not enough space OR any other reason
+		// Check for syscall failure
 		if (ptr == NULL) {
 			if (errno == ERANGE) {
 				size *= 2;
@@ -48,7 +48,7 @@ void get_current_directory() {
 }
 
 
-// While status is nonzero, read line from stdin, separate line into args, then call execute to either fork or call builtin shell functions functions
+// While status is nonzero, read line from stdin, tokenize line, then call execute to either create necessary child processes OR call built-in functions
 void shell_loop() {
 	
 	char* line;
