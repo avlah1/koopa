@@ -9,24 +9,153 @@
 #include <errno.h>
 
 #include "builtins.h"
-#include "input_handler.h"
-#include "redirect.h"
+#include "execute.h"
 #include "colors.h"
 
+// Macro function for syscall error detection
+#define SYS_ERR_CHECK(X) do { \
+	int retval = (X); \
+	if (retval == -1) { \
+		fprintf(stderr,  ERROR "%s\n", strerror(errno)); \
+		exit(EXIT_FAILURE); \
+	} \
+} while(0)
+
+
+// Determines if clobbering or appending and updates flags accordingly. Opens file, redirect stdout to the file. Clears the redirect token by setting position to NULL. 
+void redirect_out(char** args, struct command_info* info) {
+	
+	int open_flags = O_CREAT | O_WRONLY;
+	
+	if (strcmp(info->redirect_out[0], ">>") == 0) {
+		open_flags |= O_APPEND;
+	} else {
+		open_flags |= O_TRUNC; 
+	}
+	int file_desc = open(info->file[0], open_flags, 0644);
+
+	SYS_ERR_CHECK(file_desc);
+
+	SYS_ERR_CHECK(dup2(file_desc, 1));
+
+	SYS_ERR_CHECK(close(file_desc));
+	
+	info->redirect_out[0] = NULL;
+}
+
+
+// Opens file to read from, redirect stdin to file. Clears the redirect token by setting position to NULL.
+void redirect_in(char** args, struct command_info* info) {
+	int file_desc = open(info->file[0], O_RDONLY);
+
+	SYS_ERR_CHECK(file_desc);
+
+	SYS_ERR_CHECK(dup2(file_desc, STDIN_FILENO));
+
+	SYS_ERR_CHECK(close(file_desc));
+
+	info->redirect_in[0]= NULL;
+}
+
+// Receives a reference to the info struct for a given set of args, determines redirection/piping is necessary, and updates the struct accordingly
+void parse_command(char** args, struct command_info* info) {
+	
+	
+	int i = 0;
+	int redirect_flag = 0; 
+
+	while (args[i] != NULL) {
+		if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0)) {
+			info->redirect_out = &args[i];
+			redirect_flag = 1;
+			break;
+		} else if (strcmp(args[i], "<") == 0) {
+			info->redirect_in = &args[i];
+			redirect_flag = 1;
+			break;
+		} else if (strcmp(args[i], "|") == 0) {
+			info->piped = &args[i];
+			info->pipe_position = i;
+		}
+		i++;
+	}
+
+	if (!redirect_flag) return;
+	
+	// If redirect is necessary, update the struct with the destination/source file for redirection
+	info->file = &args[i + 1];
+}
+
+// Initializes pipe, creates two children and redirects I/O streams to appropriate file descriptor. 
+// NOTE: Obviously this function only supports a single pipe operation. Additionally, it does not support piping w/ output redirection of any kind. This function will be modified to support these actions in the future. 
+int launch_pipeline(char** args, struct command_info* info) {
+	int pipefd[2];
+
+	pid_t pid1;
+	pid_t pid2;
+
+	SYS_ERR_CHECK(pipe(pipefd));
+	
+	info->piped[0] = NULL;
+
+	pid1 = fork();
+
+	if (pid1 == 0) {
+		SYS_ERR_CHECK(dup2(pipefd[1], STDOUT_FILENO));
+		SYS_ERR_CHECK(close(pipefd[0]));
+		SYS_ERR_CHECK(close(pipefd[1]));
+		
+		if (execvp(args[0], args) == - 1) {
+			fprintf(stderr, ERROR "%s\n", strerror(errno));
+		}
+
+	} else if (pid1 == -1) {
+		fprintf(stderr, ERROR"%s\n", strerror(errno));
+	}	
+
+	pid2 = fork();
+	if (pid2 == 0) {
+		SYS_ERR_CHECK(dup2(pipefd[0], STDIN_FILENO));
+		SYS_ERR_CHECK(close(pipefd[0]));
+		SYS_ERR_CHECK(close(pipefd[1]));
+		
+		if (execvp(args[info->pipe_position + 1], &args[info->pipe_position + 1]) == -1) {
+			fprintf(stderr, ERROR "%s\n", strerror(errno));
+	
+		} 
+	} else if (pid2 == - 1) {
+		fprintf(stderr, ERROR"%s\n", strerror(errno));
+	}
+
+	close(pipefd[0]);
+	close(pipefd[1]);
+
+
+	wait(NULL);
+	wait(NULL);
+	
+	return 1;
+}
+
+
 // Initializes child process specified by arg at index 0. Child process exits on failure.
-int launch(char** args) {
+int launch_standard(char** args, struct command_info* info) {
 	
 	pid_t pid; 
 	int status;
-	
+		
 	pid = fork();
 
 	if (pid == 0) {
 		// CHILD PROCESS
-	       	// Check to see if a redirection symbol is present in the args list, if it is, do stuff (see redirect.c). Otherwise, don't do stuff. In either case, call execvp. 
-		find_redirection(args);	
-
-		// Opted not to use the macro here as this syscall operates a bit differently than the others that are in the previous conditional block. That is, if execv returns at all, we should exit. 
+	
+		// Check which fields in the struct have been updated and call the corresponding redirection function	
+		if (info->redirect_out) {
+			redirect_out(args, info);
+		} else if (info->redirect_in) {
+			redirect_in(args, info);
+		}	
+		
 		if (execvp(args[0], args) == -1) {
 			fprintf(stderr, ERROR "%s\n", strerror(errno));
 		}
@@ -47,6 +176,7 @@ int launch(char** args) {
 	}
 
 	return 1;
+	
 }
 
 // An entry point to detect whether the given arg in index 0 is built in, or if forking is required.
@@ -65,6 +195,13 @@ int execute(char** args) {
 		}
 	}	
 	
-	return launch(args);
+	struct command_info info = {0};
+	parse_command(args, &info);
+	
+	if (info.piped) {
+		return launch_pipeline(args, &info);
+	} 
+	
+	return launch_standard(args, &info);
 }
 

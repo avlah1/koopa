@@ -17,27 +17,26 @@
 
 int global_quoted = 1;
 
+// Helper: Essentially strtok except for it handles quoted strings accordingly
 char* get_token(char* str, char* delimeters) {
 	
-	// Static storage for subsequent calls to get_token
+	// Static storage for subsequent calls to this function
 	static char* next_token_start = NULL;
 	
 	size_t token_size = TOKEN_SIZE;
 
-	// The token buffer. Characters from str will be transferred here.
 	char* token_start = malloc(token_size * sizeof(char));
 
 	if (!token_start) {
-		fprintf(stderr, ERROR"allocator fail while get_token\n");
+		fprintf(stderr, ERROR"allocator fail while parsing line\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	// Now, handle the input string. Find where we are in the string.
 	if (str != NULL) {
-		// First call to get_token
+		// First call to this function
 		next_token_start = str;
 	} else {
-		// Subsequent calls to get_token
+		// Subsequent calls to this function
 		str = next_token_start;
 	}
 	
@@ -46,12 +45,12 @@ char* get_token(char* str, char* delimeters) {
 		return NULL;
 	}
 	
-	// Eat leading delimiters
+	// Handle leading delimeters
 	while (*str != '\0' && strchr(delimeters, *str) != NULL) {
 		str++;
 	}
 	
-	// Return null if we nothing but delimters are left
+	// Return null if there is nothing but delimters are left
 	if (*str == '\0') {
 		next_token_start = NULL;
 		return NULL;
@@ -78,7 +77,8 @@ char* get_token(char* str, char* delimeters) {
 			str++;
 		}
 	}
-
+	
+	// If unbalanced quotes, print error, toggle error flag, return null
 	if (quoted) {
 		fprintf(stderr, ERROR "argument missing balanced quotes\n");
 		global_quoted = !global_quoted;
@@ -104,7 +104,6 @@ char** parse_line(char* line) {
 	char** tokens = malloc(buffer_size * sizeof(char*));
 	char* token;
 
-	// Parent process will exit failure on allocator fail	
 	if (!tokens) {
 		fprintf(stderr, ERROR"error: allocator fail while parse_line\n");
 		exit(EXIT_FAILURE);

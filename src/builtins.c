@@ -3,11 +3,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "builtins.h"
 #include "colors.h"
-// A file for built in shell functions that do not necessitate forking.
-
-int kpa_exit(char**);
-int kpa_cd(char**);
 
 // String identifiers for inbound built in commands
 char* builtins_strs[] = {
