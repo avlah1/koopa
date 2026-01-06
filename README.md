@@ -6,11 +6,11 @@ Features:
 - Execute standard Unix commands
 - Built-in commands include cd and exit 
 - Output redirection using > and >>
+- Pipe two processes with |
 - Basic error handling
 
 Features coming soon
-- Support for piping
-- Colored text and shell output formatting improvments
+- Pipe more than two processes together
 
 Building/Installation
 - GCC and Make required
