@@ -1,4 +1,6 @@
-koopa
+obj/
+.vscode/
+Koopa
 *.o
 *.swp
 *.txt
