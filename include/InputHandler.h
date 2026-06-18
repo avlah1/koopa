@@ -35,6 +35,12 @@ typedef enum {
 // - PARSE_SYSTEM_ERROR when a system failure occurs during parsing (eg, malloc fail)
 ParseResult ParseLine(char* line, char*** args_ptr_ret, int* num_args_ret);
 
+typedef enum {
+  QUOTE_NONE,
+  QUOTE_SINGLE,
+  QUOTE_DOUBLE
+} QuoteState;
+
 // Splits the C-string "str" at delimeters "delimeters", one at a time. 
 // Tokens are split with a '\0'.  If successful,
 // a pointer to a newly formed token is returned via the return parameter "token_ret".

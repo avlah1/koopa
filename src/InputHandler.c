@@ -103,42 +103,56 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
   }
   // Create quoted flag and marker for token start, checking for leading quotation
   // and adjusting accordingly.
-  bool quoted = false;
+  
+  QuoteState state = QUOTE_NONE;
   if (*str == '"') {
-    quoted = true;
+    state = QUOTE_DOUBLE;
+    str++;
+  } else if (*str == '\'') {
+    state = QUOTE_SINGLE;
     str++;
   }
   char* token_start = str;
-  
+  int position = 0;
+
   while (*str != '\0') {
     if (*str == '"') {
-      if (quoted) {
-        quoted = false;
-        break;
+      if (state == QUOTE_NONE) {
+        state = QUOTE_DOUBLE;
+      } else if (state == QUOTE_DOUBLE) {
+        state = QUOTE_NONE;
+      } else {
+        token_start[position] = *str;
+        position++;
       }
-      quoted = true;
       str++;
-    } else if (!quoted && strchr(delimiters, *str) != NULL) {
+    } else if (*str == '\'') {
+      if (state == QUOTE_NONE) {
+        state = QUOTE_SINGLE;
+      } else if (state == QUOTE_SINGLE) {
+        state = QUOTE_NONE;
+      } else {
+        token_start[position] = *str;
+        position++;
+      }
+      str++;
+    } else if (state == QUOTE_NONE && strchr(delimiters, *str) != NULL) {
       break;
     } else {
+      token_start[position] = *str;
+      position++;
       str++;
-    }
+    } 
   }
-  // Check for unbalanced quotes, this is considered a hard fail
-  if (quoted) {
+  if (state != QUOTE_NONE) {
     return PARSE_BAD_INPUT;
   }
-  // Check the current character. If it isnt a null character, 
-  // then set it to null character and set nts to one position ahead of us
-  // for subseqent call. 
-  // Otherwise, we are at the end of the string. Set nts to null.
-  // In either case, set the return parameter to token start and return true.
   if (*str != '\0') {
-    *str = '\0';
     next_token_start = str + 1;
   } else {
     next_token_start = NULL;
   }
+  token_start[position] = '\0';
   *token_ret = token_start;
   return PARSE_OK;
 }
