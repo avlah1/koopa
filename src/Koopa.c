@@ -5,6 +5,7 @@
 
 #include "../include/Koopa.h"
 #include "../include/InputHandler.h"
+#include "../include/Execute.h"
 #include "../include/Colors.h"
 
 #define BUFSIZE 256
@@ -21,8 +22,7 @@ bool ShellLoop() {
   char* line;
   char** args;
   int num_args;
-  bool status;
-  
+  bool status; 
   do {
     printf(COLOR_GREEN"kpa:"COLOR_END);
     if (!GetCurrentDir(&curr_dir)) {
@@ -42,25 +42,26 @@ bool ShellLoop() {
       printf(ERROR"argument missing balanced quotes\n"COLOR_END);
       continue;
     }
+    status = Launch(args);
     free(line);
     free(args);
-  } while (true);
+  } while (status);
   return true;
 }
 
 bool GetCurrentDir(char** path_ptr_ret) {
   size_t buffer_size = BUFSIZE;
   char* ptr = NULL;
-  char* buffer;
+  char* dirname;
   do {
-    buffer = malloc(sizeof(char) * buffer_size);
-    if (buffer == NULL) {
+    dirname = (char*) malloc(sizeof(char) * buffer_size);
+    if (dirname == NULL) {
       perror("malloc failed in GetCurrentDir");
       return false;
     }
-    ptr = getcwd(buffer, buffer_size);
+    ptr = getcwd(dirname, buffer_size);
     if (ptr == NULL) {
-      free(buffer);
+      free(dirname);
       if (errno == ERANGE) {
         buffer_size *= 2;
       } else {
@@ -72,7 +73,6 @@ bool GetCurrentDir(char** path_ptr_ret) {
       }
     }
   } while (ptr == NULL);
-
-  *path_ptr_ret = buffer;
+  *path_ptr_ret = dirname;
   return true;
 }

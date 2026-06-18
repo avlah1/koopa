@@ -21,8 +21,7 @@ static bool KpaCd(char** args) {
 }
 
 static bool KpaExit(char** args) {
-  printf("exiting!");
-  return true;
+  return false;
 }
 
 static char* BuiltInsStrs[] = {
@@ -50,6 +49,6 @@ bool Launch(char** args) {
       return (*built_ins[i])(args);
     }
   }
-  return false; // TODO: change this
+  return true; // TODO: change this
 }
 
