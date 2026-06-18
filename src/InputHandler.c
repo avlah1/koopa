@@ -73,20 +73,18 @@ ParseResult ParseLine(char* line, char*** args_ptr_ret, int* num_args_ret) {
   tokens[position] = NULL;
   *args_ptr_ret = tokens;
   *num_args_ret = position;
-
   return PARSE_OK;
 }
 
 ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
   static char* next_token_start = NULL; // Keep track of where we are at in the string
-  
+
   // Check if this is the first call to this function and adjust str accordingly
   if (str != NULL) {
     next_token_start = str;
   } else {
     str = next_token_start;
   }
-
   // Check if there is anything left to tokenize
   // If str is NULL at this point, that means that nts was null
   // which means it was set to NULL from previous call.
@@ -94,18 +92,15 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
     *token_ret = NULL;
     return PARSE_OK;
   }
-
   // Eat leading delimeters
   while (*str != '\0' && strchr(delimiters, *str) != NULL) {
     str++;
   }
-
   // Check if there is anything left to parse
   if (*str == '\0') {
     *token_ret = NULL;
     return PARSE_OK;
   }
-  
   // Create quoted flag and marker for token start, checking for leading quotation
   // and adjusting accordingly.
   bool quoted = false;
@@ -129,12 +124,10 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
       str++;
     }
   }
- 
   // Check for unbalanced quotes, this is considered a hard fail
   if (quoted) {
     return PARSE_BAD_INPUT;
   }
-  
   // Check the current character. If it isnt a null character, 
   // then set it to null character and set nts to one position ahead of us
   // for subseqent call. 
@@ -148,5 +141,4 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
   }
   *token_ret = token_start;
   return PARSE_OK;
- 
 }
