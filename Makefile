@@ -17,4 +17,4 @@ obj:
 	mkdir -p obj
 	
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) *.txt
