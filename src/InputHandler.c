@@ -7,12 +7,12 @@
 #define BUFSIZE 256
 #define DELIMITERS " \n\t"
 
-bool ReadLine(char** line_ptr_ret) {
+ReadResult ReadLine(char** line_ptr_ret) {
   size_t buffer_size = BUFSIZE;
   char* buffer = (char*) malloc(sizeof(char) * buffer_size);
   if (buffer == NULL) {
     perror("malloc failed in ReadLine");
-    return false;
+    return READ_SYSTEM_ERROR;
   }
   int position = 0;
   int c;
@@ -20,7 +20,7 @@ bool ReadLine(char** line_ptr_ret) {
     if (c == '\n') {
       buffer[position] = '\0';
       *line_ptr_ret = buffer;
-      return true;
+      return READ_OK;
     } else {
       buffer[position] = c;
     }
@@ -30,45 +30,48 @@ bool ReadLine(char** line_ptr_ret) {
       buffer = realloc(buffer, buffer_size);
       if (buffer == NULL) {
         perror("realloc failed in ReadLine");
-        break;
+        free(buffer);
+        return READ_SYSTEM_ERROR;
       }
     }
   }
   free(buffer);
-  return false;
+  return READ_EOF;
 }
 
-/*
+static void ShiftArgs(char** args, int start, int end, int shift) {
+  for (int i = start; i <= end; i++) {
+    args[i - shift] = args[i];
+  }
+}
 
-typedef struct {
-  char** args;
-  char* input_file;
-  char* output_file;
-  bool append;
-  bool background;
-} Command;
-*/
 ParseResult ParseLine(char** args, int num_args, Command** cmd_ret) {
-  // what are the things that could go wrong??
   Command* cmd = (Command*) calloc(1, sizeof(Command));
   if (cmd == NULL) {
     perror("calloc failed in ParseLine");
     return PARSE_SYSTEM_ERROR;
   }
-  for (int i = 0; i < num_args; i++) {
-    if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0)) {
-      if (i == num_args - 1) {
+  int i = 0;
+  while (i < num_args) {
+    if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>")) == 0) {
+      if (i == num_args -1) {
         free(cmd);
         return PARSE_BAD_INPUT;
       }
       cmd->output_file = args[i + 1];
       cmd->append = strcmp(args[i], ">>") == 0;
+      ShiftArgs(args, i + 2, num_args, 2);
+      num_args -= 2;
     } else if (strcmp(args[i], "<") == 0) {
-      if (i == num_args - 1) {
+      if (i == num_args -1) {
         free(cmd);
         return PARSE_BAD_INPUT;
       }
       cmd->input_file = args[i + 1];
+      ShiftArgs(args, i + 2, num_args, 2);
+      num_args -= 2;
+    } else {
+      i++;
     }
   }
   cmd->args = args;
@@ -77,45 +80,17 @@ ParseResult ParseLine(char** args, int num_args, Command** cmd_ret) {
   return PARSE_OK;
 }
 
-ParseResult TokenizeLine(char* line, char*** args_ptr_ret, int* num_args_ret) {
-  int buffer_size = BUFSIZE;
-  char* token;
-  char** tokens = (char**) malloc(sizeof(char*) * buffer_size);
-  if (tokens == NULL) {
-    perror("malloc failed in ParseLine");
-    return PARSE_SYSTEM_ERROR;
-  }
-  int position = 0;
-  if (GetToken(line, &token, DELIMITERS) == PARSE_BAD_INPUT) {
-    printf("unbalanced quotes1\n");
-    free(tokens);
-    return PARSE_BAD_INPUT;
-  }
-  while (token != NULL) {
-    tokens[position] = token;
-    position++;
-    if (position >= buffer_size) {
-      buffer_size += BUFSIZE;
-      tokens = (char**) realloc(tokens, sizeof(char*) * buffer_size);
-      if (tokens == NULL) {
-        free(tokens);
-        return PARSE_SYSTEM_ERROR;
-      }
-    }
-    if (GetToken(NULL, &token, DELIMITERS) == PARSE_BAD_INPUT) {
-      free(tokens);
-      return PARSE_BAD_INPUT;
-    }
-  }
-  tokens[position] = NULL;
-  *args_ptr_ret = tokens;
-  *num_args_ret = position;
-  return PARSE_OK;
-}
 
-ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
-  static char* next_token_start = NULL; // Keep track of where we are at in the string
-
+// Static helper that splits the C-string "str" at delimeters "delimeters", one at a time. 
+// Tokens are split with a '\0'.  If successful,
+// a pointer to a newly formed token is returned via the return parameter "token_ret".
+// A first call to this function should place the actual string to be tokenized at str.
+// For subsequent calls, NULL should be passed as "str".
+// This function returns:
+// - PARSE_OK when the end of the string "str" is reached (eg, a null character)
+// - PARSE_BAD_INPUT when a portion of "str" is unexpected (eg, unbalanced quotes)
+static ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
+  static char* next_token_start = NULL;
   // Check if this is the first call to this function and adjust str accordingly
   if (str != NULL) {
     next_token_start = str;
@@ -129,18 +104,14 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
     *token_ret = NULL;
     return PARSE_OK;
   }
-  // Eat leading delimeters
-  while (*str != '\0' && strchr(delimiters, *str) != NULL) {
-    str++;
-  }
-  // Check if there is anything left to parse
+
+  while (*str != '\0' && strchr(delimiters, *str) != NULL) { str++; }
+
   if (*str == '\0') {
     *token_ret = NULL;
     return PARSE_OK;
   }
-  // Create quoted flag and marker for token start, checking for leading quotation
-  // and adjusting accordingly.
-  
+
   QuoteState state = QUOTE_NONE;
   if (*str == '"') {
     state = QUOTE_DOUBLE;
@@ -149,9 +120,9 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
     state = QUOTE_SINGLE;
     str++;
   }
+
   char* token_start = str;
   int position = 0;
-
   while (*str != '\0') {
     if (*str == '"') {
       if (state == QUOTE_NONE) {
@@ -193,3 +164,39 @@ ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
   *token_ret = token_start;
   return PARSE_OK;
 }
+
+ParseResult TokenizeLine(char* line, char*** args_ptr_ret, int* num_args_ret) {
+  int buffer_size = BUFSIZE;
+  char* token;
+  char** tokens = (char**) malloc(sizeof(char*) * buffer_size);
+  if (tokens == NULL) {
+    perror("malloc failed in ParseLine");
+    return PARSE_SYSTEM_ERROR;
+  }
+  int position = 0;
+  if (GetToken(line, &token, DELIMITERS) == PARSE_BAD_INPUT) {
+    free(tokens);
+    return PARSE_BAD_INPUT;
+  }
+  while (token != NULL) {
+    tokens[position] = token;
+    position++;
+    if (position >= buffer_size) {
+      buffer_size += BUFSIZE;
+      tokens = (char**) realloc(tokens, sizeof(char*) * buffer_size);
+      if (tokens == NULL) {
+        free(tokens);
+        return PARSE_SYSTEM_ERROR;
+      }
+    }
+    if (GetToken(NULL, &token, DELIMITERS) == PARSE_BAD_INPUT) {
+      free(tokens);
+      return PARSE_BAD_INPUT;
+    }
+  }
+  tokens[position] = NULL;
+  *args_ptr_ret = tokens;
+  *num_args_ret = position;
+  return PARSE_OK;
+}
+
