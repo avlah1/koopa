@@ -39,16 +39,16 @@ static bool (*built_ins[])(char**) = {
 };
 //************************************************/
 
-bool Launch(char** args) {
-  if (args[0] == NULL) {
+bool Launch(Command* cmd) {
+  if (cmd->args[0] == NULL) {
     return false;
   }
   int n = NumBuiltIns();
   for (int i = 0; i < n; i++) {
-    if (strcmp(args[0], BuiltInsStrs[i]) == 0) {
-      return (*built_ins[i])(args);
+    if (strcmp(cmd->args[0], BuiltInsStrs[i]) == 0) {
+      return (*built_ins[i])(cmd->args);
     }
   }
-  return true; // TODO: change this
+  return false; // TODO: change this
 }
 

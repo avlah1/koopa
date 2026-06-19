@@ -10,6 +10,8 @@
 
 #define BUFSIZE 256
 
+#define DEBUG 0
+
 int main(int argc, char** argv) {
   if (!ShellLoop()) {
     return EXIT_FAILURE;
@@ -22,7 +24,7 @@ bool ShellLoop() {
   char* line;
   char** args;
   int num_args;
-  bool status; 
+  bool status = true; 
   do {
     printf(COLOR_GREEN"kpa:"COLOR_END);
     if (!GetCurrentDir(&curr_dir)) {
@@ -33,19 +35,45 @@ bool ShellLoop() {
     if (!ReadLine(&line)) {
       return false;
     }
-    ParseResult parse_res = ParseLine(line, &args, &num_args);
-    if (parse_res != PARSE_OK) {
+    ParseResult token_res = TokenizeLine(line, &args, &num_args);
+    if (token_res != PARSE_OK) {
       free(line);
-      if (parse_res == PARSE_SYSTEM_ERROR) {
+      if (token_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
       printf(ERROR"argument missing balanced quotes\n"COLOR_END);
       continue;
     }
-    status = Launch(args);
+    Command* cmd;
+    ParseResult parse_res = ParseLine(args, num_args, &cmd);
+    if (parse_res != PARSE_OK) {
+      free(line);
+      free(args);
+      if (parse_res == PARSE_SYSTEM_ERROR) {
+        return false;
+      }
+      printf(ERROR"expected file name for i/o redirection\n"COLOR_END);
+      continue;
+    }
+    if (DEBUG) {
+      printf("num args: %d\n", cmd->num_args);
+      for (int i = 0; i < cmd->num_args; i++) {
+        printf("arg[%d]: %s\n", i, cmd->args[i]);
+      }
+      printf("input_file: %s\n", cmd->input_file);
+      printf("output_file: %s\n", cmd->output_file);
+      if (cmd->append == 0) {
+        printf("append false\n");
+      } else {
+        printf("append true\n");
+      }
+    }
+    status = Launch(cmd);
     free(line);
     free(args);
+    free(cmd);
   } while (status);
+  
   return true;
 }
 
