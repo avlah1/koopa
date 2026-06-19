@@ -4,18 +4,17 @@
 #include <errno.h>
 
 #include "../include/Koopa.h"
-#include "../include/InputHandler.h"
-#include "../include/Execute.h"
-#include "../include/Colors.h"
 
 #define BUFSIZE 256
 
-#define DEBUG 0
+#define DEBUG 1
 
 int main(int argc, char** argv) {
   if (!ShellLoop()) {
+    printf("Koopa exited with failure\n");
     return EXIT_FAILURE;
   }
+  printf("Koopa exited with success\n");
   return EXIT_SUCCESS;
 }
 
@@ -24,24 +23,33 @@ bool ShellLoop() {
   char* line;
   char** args;
   int num_args;
-  bool status = true; 
-  do {
+
+  while (true) {
+    // DISPLAY
     printf(COLOR_GREEN"kpa:"COLOR_END);
     if (!GetCurrentDir(&curr_dir)) {
       return false;
     }
     printf(COLOR_BLUE"%s>> "COLOR_END, curr_dir);
     free(curr_dir);
-    if (!ReadLine(&line)) {
+    
+    // READ
+    ReadResult read_res = ReadLine(&line);
+    if (read_res != READ_OK) {
+      if (read_res == READ_EOF) {
+        return true;
+      }
       return false;
     }
+
+    // TOKENIZE AND PARSE
     ParseResult token_res = TokenizeLine(line, &args, &num_args);
     if (token_res != PARSE_OK) {
       free(line);
       if (token_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      printf(ERROR"argument missing balanced quotes\n"COLOR_END);
+      fprintf(stderr, ERROR " argument missing balanced quotes\n");
       continue;
     }
     Command* cmd;
@@ -52,28 +60,19 @@ bool ShellLoop() {
       if (parse_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      printf(ERROR"expected file name for i/o redirection\n"COLOR_END);
+      fprintf(stderr, ERROR" expected file name for i/o redirection\n");
       continue;
     }
-    if (DEBUG) {
-      printf("num args: %d\n", cmd->num_args);
-      for (int i = 0; i < cmd->num_args; i++) {
-        printf("arg[%d]: %s\n", i, cmd->args[i]);
-      }
-      printf("input_file: %s\n", cmd->input_file);
-      printf("output_file: %s\n", cmd->output_file);
-      if (cmd->append == 0) {
-        printf("append false\n");
-      } else {
-        printf("append true\n");
-      }
-    }
-    status = Launch(cmd);
+
+    // EXECUTE COMMANDS
+    ShellStatus status = Execute(cmd);
     free(line);
     free(args);
     free(cmd);
-  } while (status);
-  
+    if (status == SHELL_EXIT) {
+      break;
+    }
+  }
   return true;
 }
 
@@ -93,9 +92,6 @@ bool GetCurrentDir(char** path_ptr_ret) {
       if (errno == ERANGE) {
         buffer_size *= 2;
       } else {
-        // This is what I would consider a critical error
-        // like a malloc fail. Any error should be dev facing 
-        // rather than user facing.
         perror("getcwd failed in GetCurrentDir");
         return false;
       }
