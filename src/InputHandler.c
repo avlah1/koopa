@@ -38,7 +38,46 @@ bool ReadLine(char** line_ptr_ret) {
   return false;
 }
 
-ParseResult ParseLine(char* line, char*** args_ptr_ret, int* num_args_ret) {
+/*
+
+typedef struct {
+  char** args;
+  char* input_file;
+  char* output_file;
+  bool append;
+  bool background;
+} Command;
+*/
+ParseResult ParseLine(char** args, int num_args, Command** cmd_ret) {
+  // what are the things that could go wrong??
+  Command* cmd = (Command*) calloc(1, sizeof(Command));
+  if (cmd == NULL) {
+    perror("calloc failed in ParseLine");
+    return PARSE_SYSTEM_ERROR;
+  }
+  for (int i = 0; i < num_args; i++) {
+    if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>") == 0)) {
+      if (i == num_args - 1) {
+        free(cmd);
+        return PARSE_BAD_INPUT;
+      }
+      cmd->output_file = args[i + 1];
+      cmd->append = strcmp(args[i], ">>") == 0;
+    } else if (strcmp(args[i], "<") == 0) {
+      if (i == num_args - 1) {
+        free(cmd);
+        return PARSE_BAD_INPUT;
+      }
+      cmd->input_file = args[i + 1];
+    }
+  }
+  cmd->args = args;
+  cmd->num_args = num_args;
+  *cmd_ret = cmd;
+  return PARSE_OK;
+}
+
+ParseResult TokenizeLine(char* line, char*** args_ptr_ret, int* num_args_ret) {
   int buffer_size = BUFSIZE;
   char* token;
   char** tokens = (char**) malloc(sizeof(char*) * buffer_size);
@@ -59,13 +98,11 @@ ParseResult ParseLine(char* line, char*** args_ptr_ret, int* num_args_ret) {
       buffer_size += BUFSIZE;
       tokens = (char**) realloc(tokens, sizeof(char*) * buffer_size);
       if (tokens == NULL) {
-        perror("realloc failed in ParseLine");
         free(tokens);
         return PARSE_SYSTEM_ERROR;
       }
     }
     if (GetToken(NULL, &token, DELIMITERS) == PARSE_BAD_INPUT) {
-      printf("unbalanced quotes2\n");
       free(tokens);
       return PARSE_BAD_INPUT;
     }

@@ -22,6 +22,16 @@ typedef enum {
   PARSE_SYSTEM_ERROR
 } ParseResult;
 
+typedef struct {
+  char** args;
+  char* input_file;
+  char* output_file;
+  int num_args;
+  bool append;
+} Command;
+
+ParseResult ParseLine(char** args, int num_args, Command** cmd_ret);
+
 // Tokenizes C-string "line" in-place. Pointers to the individual tokens 
 // are placed in contiguous memory on the heap, and a pointer to the first 
 // arg pointer is returned in the output paramter "args_ptr_ret" and the number of
@@ -33,7 +43,7 @@ typedef enum {
 // - PARSE_OK on success
 // - PARSE_BAD_INPUT when the C-string at "line" is unexpected (eg, unbalanced quotes)
 // - PARSE_SYSTEM_ERROR when a system failure occurs during parsing (eg, malloc fail)
-ParseResult ParseLine(char* line, char*** args_ptr_ret, int* num_args_ret);
+ParseResult TokenizeLine(char* line, char*** args_ptr_ret, int* num_args_ret);
 
 typedef enum {
   QUOTE_NONE,
