@@ -1,7 +1,5 @@
-#ifndef SHELLTYPES_H
-#define SHELLTYPES_H
-
-#include <stdbool.h>
+#ifndef SHELLTYPES_H_
+#define SHELLTYPES_H_
 
 // Custom enumeration that allows for ShellLoop to terminate or continue iteration.
 // SHELL_CONTINUE should be returned to ShellLoop if a process or a built-in function
@@ -14,8 +12,8 @@ typedef enum {
 
 // Custom enumeration to track quote-parsing state while scanning a token character by character.
 // QUOTE_NONE indicates the scanner is not currently inside a quoted section.
-// QUOTE_SINGLE indicates the scanner is inside a single-quoted where all characters are treated as literal.
-// QUOTE_DOUBLE indicates the scanner is inside a double-quoted where all characters are treated as literal.
+// QUOTE_SINGLE indicates the scanner is inside a single-quoted region where all characters are treated as literal.
+// QUOTE_DOUBLE indicates the scanner is inside a double-quoted retion where all characters are treated as literal.
 typedef enum {
   QUOTE_NONE,
   QUOTE_SINGLE,
@@ -25,7 +23,7 @@ typedef enum {
 // Custom enumeration for ReadLine to communicate why reading stopped, since a return value of
 // false alone cannot distinguish a normal end-of-input condition from a genuine failure.
 // READ_OK is to be used when a full line was read successfully.
-// READ_EOF is to be used when end-of-file (e.g. Ctrl+D) was reached, which is a normal,
+// READ_EOF is to be used when end-of-file (eg Ctrl+D) was reached, which is a normal,
 //   expected way for input to end and should not be treated as an error.
 // READ_SYSTEM_ERROR is to be used if a system failure occurs while reading, eg malloc/realloc fail.
 typedef enum {
@@ -35,8 +33,8 @@ typedef enum {
 } ReadResult;
 
 // Custom enumeration for parsing functions that could result in more than two return values.
-// PARSE_BAD_INPUT is to be used if the parser receives bad input, eg unbalanced quotes
-// PARSE_SYSTEM_ERROR is to be used if a system failure occurs during parsing, eg malloc fail
+// PARSE_BAD_INPUT is to be used if the parser receives bad input (eg unbalanced quotes)
+// PARSE_SYSTEM_ERROR is to be used if a system failure occurs during parsing (eg malloc fail)
 // PARSE_OK is to be used when parsing is successful.
 typedef enum {
   PARSE_OK,
@@ -62,4 +60,4 @@ typedef struct {
   bool append;
 } Command;
 
-#endif
+#endif  // SHELL_TYPES_H_

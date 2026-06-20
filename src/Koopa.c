@@ -76,7 +76,7 @@ bool ShellLoop() {
   return true;
 }
 
-bool GetCurrentDir(char** path_ptr_ret) {
+bool GetCurrentDir(char** path_ret) {
   size_t buffer_size = BUFSIZE;
   char* ptr = NULL;
   char* dirname;
@@ -97,6 +97,6 @@ bool GetCurrentDir(char** path_ptr_ret) {
       }
     }
   } while (ptr == NULL);
-  *path_ptr_ret = dirname;
+  *path_ret = dirname;
   return true;
 }

@@ -1,5 +1,5 @@
-#ifndef COLORS_H
-#define COLORS_H
+#ifndef COLORS_H_
+#define COLORS_H_
 
 #define ERROR "\033[31mError: \033[0m"
 #define COLOR_RED "\033[31mKoopa:"
@@ -7,4 +7,4 @@
 #define COLOR_BLUE "\033[34m"
 #define COLOR_END "\033[0m"
 
-#endif
+#endif  // COLORS_H_

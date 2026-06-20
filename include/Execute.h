@@ -1,6 +1,5 @@
 #ifndef EXECUTE_H_
 #define EXECUTE_H_
-
 #include <stdbool.h>
 
 #include "InputHandler.h"

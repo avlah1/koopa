@@ -7,7 +7,7 @@
 #define BUFSIZE 256
 #define DELIMITERS " \n\t"
 
-ReadResult ReadLine(char** line_ptr_ret) {
+ReadResult ReadLine(char** line_ret) {
   size_t buffer_size = BUFSIZE;
   char* buffer = (char*) malloc(sizeof(char) * buffer_size);
   if (buffer == NULL) {
@@ -19,7 +19,7 @@ ReadResult ReadLine(char** line_ptr_ret) {
   while ((c = getchar()) != EOF) {
     if (c == '\n') {
       buffer[position] = '\0';
-      *line_ptr_ret = buffer;
+      *line_ret = buffer;
       return READ_OK;
     } else {
       buffer[position] = c;
