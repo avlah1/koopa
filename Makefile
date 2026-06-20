@@ -1,16 +1,20 @@
-all: koopa
+CC = gcc
+CFLAGS = -g -Wall -std=c23
 
-koopa: koopa.o input_handler.o builtins.o execute.o
-	gcc -g -Wall -o koopa koopa.o input_handler.o builtins.o execute.o
+TARGET = Koopa
+SRCS = $(wildcard src/*.c)
+OBJS = $(SRCS:src/%.c=obj/%.o)
 
-koopa.o: src/koopa.c
-	gcc -g -Wall -Iinclude -c src/koopa.c -o koopa.o
+all: $(TARGET)
 
-input_handler.o: src/input_handler.c
-	gcc -g -Wall -Iinclude -c src/input_handler.c -o input_handler.o
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-execute.o: src/execute.c builtins.o input_handler.o redirect.o
-	gcc -g -Wall -Iinclude -c src/execute.c -o execute.o
+obj/%.o: src/%.c | obj
+	$(CC) $(CFLAGS) -c $< -o $@
 
-builtins.o: src/builtins.c
-	gcc -g -Wall -Iinclude -c src/builtins.c -o builtins.o
+obj:
+	mkdir -p obj
+	
+clean:
+	rm -f $(OBJS) $(TARGET) *.txt

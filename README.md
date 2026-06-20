@@ -1,29 +1,20 @@
 # Koopa
 
-A simple Unix shell written in C for learning systems programming.
+A Unix shell written from scratch in C, built to deepen my understanding of systems programming concepts like process management, I/O redirection, and parsing
 
-Features:
+## Features:
 - Execute standard Unix commands
 - Built-in commands include cd and exit 
-- Output redirection using > and >>
-- Pipe two processes with |
-- Basic error handling
+- I/O redirection using <, >, and >>
+- Single and double quoted input
+- Robust error handling
 
-Features coming soon
-- Pipe more than two processes together
+## Features coming soon
+- Piping
+- Conditional operator support
+- Background execution
 
-Building/Installation
-- GCC and Make required
+## Building/Installation
+- GCC (14+) and Make required, with C23 support
 - To build: make
-- To run: ./koopa
-
-
-An example session:
-
-
-<img width="799" height="330" alt="image" src="https://github.com/user-attachments/assets/c96a4969-606e-4a5b-a085-aeb783170d80" />
-
-
-
-
-
+- To run: ./Koopa

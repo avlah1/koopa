@@ -1,4 +1,7 @@
-koopa
+obj/
+.vscode/
+tests/
+Koopa
 *.o
 *.swp
 *.txt
