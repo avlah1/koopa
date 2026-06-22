@@ -3,6 +3,8 @@
 #include <stdbool.h>
 
 #include "ShellTypes.h"
+#include "CommandChain.h"
+#include "Colors.h"
 
 // Reads bytes from stdin until a newline character or EOF is reached, converting the bytes to a C-String. 
 // The bytes of the string are placed in a newly heap-allocated buffer and pointer to the buffer
@@ -17,22 +19,8 @@
 // - READ_SYSTEM_ERROR when a system failure occurs while reading bytes into memory (eg malloc/realloc fail).
 ReadResult ReadLine(char** line_ret);
 
-// Parses tokenized argument list into a Command struct, extracting and removing 
-// any I/O redirection operators and their associated filenames from "args" so that the 
-// resulting cmd->args contains only program arguments to be passed to execvp. Supports multiple
-// redirections within the same line.
-// Arguments:
-// - args: a NULL-terminated array of token pointers. This array is modified in-place (redirection
-//   operators and filenames removed by shifting later elements left). The caller retains ownership 
-//   of it regardless of the return value.
-// - num_args: the number of token in "args", not including the NULL terminator. 
-// - cmd_ret: a return parameter that will store a pointer to a newly heap-allocated Command struct.
-//   Only valid when the return value is PARSE_OK, the caller owns this memory and is responsible for freeing it.
-// Returns:
-// - PARSE_OK on success.
-// - PARSE_BAD_INPUT when a redirection operator is found with no filename following it (eg the operator is the last token).
-// - PARSE_SYSTEM_ERROR when a system failure occurs while building the Command struct (eg calloc fail).
-ParseResult ParseLine(char** args, int num_args, Command** cmd_ret);
+ParseResult ParseCommandChain(char** tokens, int num_tokens, CommandChain** chain_ret);
+
 
 // Tokenizes C-string "line" in-place. Pointers to the individual tokens
 // are placed in contiguous memory on the heap, and a pointer to the first
