@@ -42,6 +42,14 @@ typedef enum {
   PARSE_SYSTEM_ERROR
 } ParseResult;
 
+typedef enum {
+  OP_NONE,
+  OP_OR,
+  OP_AND,
+  OP_SEP
+} CondOpInfo;
+
+
 // Represents a single parsed command, ready for execution.
 // args is a NULL-terminated array of argument strings (args[0] is the program name),
 //   suitable for passing directly to execvp.
@@ -56,8 +64,17 @@ typedef struct {
   char** args;
   char* input_file;
   char* output_file;
+  struct Command* next;
+  CondOpInfo cond_op;
   int num_args;
   bool append;
 } Command;
+
+
+typedef struct {
+  Command* head;
+  Command* tail;
+  int num_commands;
+} CommandChain;
 
 #endif  // SHELL_TYPES_H_
