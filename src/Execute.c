@@ -20,31 +20,27 @@ static int last_exit_code = 0;
 
 //*****************Built-ins************************/
 
-// Changes directory to the directory specified at args[1]. If 
-// args[1] == NULL, then an error message is printed to stderr.
-// Otherwise, an attempted directory change occurs. If the attempt fails,
-// an error is printed to stderr. This function always returns SHELL_CONTINUE.
-static ShellStatus KpaCd(char** args) {
-  if (args[1] == NULL) {
-    fprintf(stderr, ERROR" expected directory for cd\n");
-  } else {
+// TODO : Rewrite function spec
+// TODO : change error handling in then block. maybe use perror instead of the literal you have in there
+static int KpaCd(char** args) {
+  if (args[1] != NULL) {
     if (chdir(args[1]) != 0) {
-      fprintf(stderr, ERROR " %s\n", strerror(errno));
+      fprintf(stderr, COLOR_RED "%s: %s" COLOR_END "\n", args[1], strerror(errno));
+      return EXIT_FAILURE;
     }
   }
-  return SHELL_CONTINUE;
+  return EXIT_SUCCESS;
 }
 
-// Returns SHELL_EXIT, signalling that the user is done 
-// using the shell.
-static ShellStatus KpaExit(char** args) {
-  return SHELL_EXIT;
+static int KpaStatus(char** args) {
+  fprintf(stdout, "%d\n", last_exit_code);
+  return EXIT_SUCCESS;
 }
 
 // An array of strings that map to the names of built-in kpa functions.
 static char* BuiltInsStrs[] = {
-	"exit",
-	"cd"
+	"cd",
+  "status"
 };
 
 // Returns the number of built-in functions.
@@ -53,9 +49,9 @@ static int NumBuiltIns() {
 }
 
 // An array of function pointers built-in functions.
-static ShellStatus (*built_ins[])(char**) = {
-  &KpaExit,
-  &KpaCd
+static int (*built_ins[])(char**) = {
+  &KpaCd,
+  &KpaStatus
 };
 //************************************************/
 
@@ -130,18 +126,42 @@ static int StandardLaunch(Command* cmd) {
   return -1;
 }
 
-ShellStatus Execute(Command* cmd) {
-  if (cmd->args[0] == NULL) {
-    return SHELL_CONTINUE;
-  }
+static int Launch(Command* cmd) {
   int n = NumBuiltIns();
   for (int i = 0; i < n; i++) {
     if (strcmp(cmd->args[0], BuiltInsStrs[i]) == 0) {
-      return (*built_ins[i])(cmd->args);
+        return (*built_ins[i])(cmd->args);
     }
   }
-  int exit_code = StandardLaunch(cmd);
-  last_exit_code = exit_code;  // For future use when the shell supports conditional operators
+  // TODO: add logic for PipelineLaunch
+  return StandardLaunch(cmd);
+}
+
+ShellStatus Execute(CommandChain* chain) {
+  Command* cmd = chain->head;
+  while (cmd != NULL) {
+    int exit_code;
+    CondOpInfo op = cmd->cond_op;
+    if (last_exit_code == 0) {
+      // the previous command successful
+      if (op == OP_AND || op == OP_SEP || op == OP_NONE) {
+        if (strcmp(cmd->args[0], "exit") == 0) {
+          return SHELL_EXIT;
+        }
+        exit_code = Launch(cmd);
+        last_exit_code = exit_code;
+      }
+    } else {
+      if (op == OP_OR || op == OP_SEP || op == OP_NONE) {
+        if (strcmp(cmd->args[0], "exit") == 0) {
+          return SHELL_EXIT;
+        }
+        exit_code = Launch(cmd);
+        last_exit_code = exit_code;
+      }
+    }
+    cmd = (Command*) cmd->next;
+  }
   return SHELL_CONTINUE;
 }
 

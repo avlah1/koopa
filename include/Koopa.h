@@ -7,6 +7,7 @@
 #include "Execute.h"
 #include "Colors.h"
 #include "ShellTypes.h"
+#include "CommandChain.h"
 
 // Function spec incoming. This function keeps changing as more functionality 
 // is added. I am holding off on writing a description for it for now.

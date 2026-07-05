@@ -12,6 +12,6 @@
 // This function handles piping and i/o redirection accordingly.
 // This function does not ever gain ownership of "args". Returns true 
 // if the child processe(s) exited successfully, otherwise returns false.
-ShellStatus Execute(Command* cmd);
+ShellStatus Execute(CommandChain* chain);
 
 #endif  // EXECUTE_H_
