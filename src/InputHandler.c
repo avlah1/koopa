@@ -4,8 +4,10 @@
 
 #include "../include/InputHandler.h"
 
+
 #define BUFSIZE 256
 #define DELIMITERS " \n\t"
+#define DEBUG 0
 
 ReadResult ReadLine(char** line_ret) {
   size_t buffer_size = BUFSIZE;
@@ -39,56 +41,123 @@ ReadResult ReadLine(char** line_ret) {
   return READ_EOF;
 }
 
-static void ShiftArgs(char** args, int start, int end, int shift) {
-  for (int i = start; i <= end; i++) {
-    args[i - shift] = args[i];
+// Maps a token string to its corresponding CondOpInfo enum value.
+// Returns OP_NONE if the token is not a conditional operator.
+static CondOpInfo GetCondOp(char* token) {
+  if (strcmp(token, "&&") == 0) {
+    return OP_AND;
+  } else if (strcmp(token, "||") == 0) {
+    return OP_OR;
+  } else if (strcmp(token, ";") == 0) {
+    return OP_SEP;
   }
+  return OP_NONE;
 }
 
-ParseResult ParseLine(char** args, int num_args, Command** cmd_ret) {
+// Parses a single command from a token range into a heap-allocated Command struct.
+// Also handles an optional leading condtional operator (&& || ;), I/O operators
+// (<, >, >>), and compies remaining tokens into cmd->args via strdup.
+// The caller owns the returned Command and is responsible for freeing it.
+static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret) {
   Command* cmd = (Command*) calloc(1, sizeof(Command));
   if (cmd == NULL) {
-    perror("calloc failed in ParseLine");
+    perror("calloc failed in ParseCommand");
     return PARSE_SYSTEM_ERROR;
   }
-  int i = 0;
-  while (i < num_args) {
-    if ((strcmp(args[i], ">") == 0) || (strcmp(args[i], ">>")) == 0) {
-      if (i == num_args -1) {
-        free(cmd);
-        return PARSE_BAD_INPUT;
-      }
-      cmd->output_file = args[i + 1];
-      cmd->append = strcmp(args[i], ">>") == 0;
-      ShiftArgs(args, i + 2, num_args, 2);
-      num_args -= 2;
-    } else if (strcmp(args[i], "<") == 0) {
-      if (i == num_args -1) {
-        free(cmd);
-        return PARSE_BAD_INPUT;
-      }
-      cmd->input_file = args[i + 1];
-      ShiftArgs(args, i + 2, num_args, 2);
-      num_args -= 2;
-    } else {
-      i++;
-    }
+  int buffer_size = BUFSIZE;
+  char** args = (char**) malloc(sizeof(char*) * buffer_size);
+  if (args == NULL) {
+    CommandChain_FreeCommand(cmd);
+    perror("malloc failed in ParseCommand");
+    return PARSE_SYSTEM_ERROR;
   }
+  int i = 0, position = 0;
+  CondOpInfo op = GetCondOp(tokens[i]);
+  if (op != OP_NONE) {
+    if (num_tokens == 1) {
+      CommandChain_FreeCommand(cmd);
+      fprintf(stderr, "kpa: expected additional argument for conditional: %s\n", tokens[i]);
+      return PARSE_BAD_INPUT;
+    }
+    i++;
+  }
+  cmd->cond_op = op;
+  while (i < num_tokens) {
+    if ((strcmp(tokens[i], ">") == 0) || (strcmp(tokens[i], ">>")) == 0) {
+      if (i == num_tokens - 1) {
+        fprintf(stderr, "kpa: expected filename for i/o redirection\n");
+        CommandChain_FreeCommand(cmd);
+        return PARSE_BAD_INPUT;
+      }
+      cmd->output_file = strdup(tokens[i + 1]);
+      cmd->append = strcmp(tokens[i], ">>") == 0;
+      i += 2;
+    } else if (strcmp(tokens[i], "<") == 0) {
+      if (i == num_tokens - 1) {
+        CommandChain_FreeCommand(cmd);
+        return PARSE_BAD_INPUT;
+      }
+      cmd->input_file = strdup(tokens[i + 1]);
+      i += 2;
+    } else {
+      args[position] = strdup(tokens[i]);
+      cmd->num_args++;
+      i++;
+      position++;
+      if (position >= buffer_size) {
+        buffer_size += BUFSIZE;
+        args = realloc(args, buffer_size);
+        if (args == NULL) {
+          perror("realloc failed in ParseCommand");
+          free(args);
+          CommandChain_FreeCommand(cmd);
+          return PARSE_SYSTEM_ERROR;
+        }
+      }
+    }    
+  }
+  args[cmd->num_args] = NULL;
   cmd->args = args;
-  cmd->num_args = num_args;
   *cmd_ret = cmd;
   return PARSE_OK;
 }
 
+ParseResult ParseCommandChain(char** tokens, int num_tokens, CommandChain** chain_ret) {
+  CommandChain* chain;
+  if (!CommandChain_Allocate(&chain)) {
+    return PARSE_SYSTEM_ERROR;
+  }
+  Command* cmd;
+  ParseResult result;
+  int start = 0;
+  for (int i = 0; i < num_tokens; i++) {
+    if ((strcmp(tokens[i], "&&") == 0) ||
+        (strcmp(tokens[i], "||") == 0) ||
+        (strcmp(tokens[i], ";") == 0)) {
+          result = ParseCommand(&tokens[start], i - start, &cmd);
+          if (result != PARSE_OK) {
+            CommandChain_Free(chain);
+            return result;
+          } 
+          CommandChain_Append(chain, cmd);
+          start = i;
+    }
+  }
+  result = ParseCommand(&tokens[start], num_tokens - start, &cmd);
+  if (result != PARSE_OK) {
+    CommandChain_Free(chain);
+    return result;
+  }
+  CommandChain_Append(chain, cmd);
+  *chain_ret = chain;
+  return PARSE_OK;
+}
 
-// Static helper that splits the C-string "str" at delimeters "delimeters", one at a time. 
-// Tokens are split with a '\0'.  If successful,
-// a pointer to a newly formed token is returned via the return parameter "token_ret".
-// A first call to this function should place the actual string to be tokenized at str.
-// For subsequent calls, NULL should be passed as "str".
-// This function returns:
-// - PARSE_OK when the end of the string "str" is reached (eg, a null character)
-// - PARSE_BAD_INPUT when a portion of "str" is unexpected (eg, unbalanced quotes)
+// Tokenizes a string in-place using strtok-style calling convention: pass the 
+// string to tokenize on the first call, then NULL on subsequent calls to get remaining
+// tokens. Handles single and double quotes: quoted sections suppress delimiter 
+// splitting and strip quote characters. Single and double quotes are tracked independently.
+// Returns PARSE_BAD_INPUT if unbalanced quotes are detected.
 static ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
   static char* next_token_start = NULL;
   // Check if this is the first call to this function and adjust str accordingly
@@ -153,6 +222,7 @@ static ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
     } 
   }
   if (state != QUOTE_NONE) {
+    fprintf(stderr, "kpa: argument missing balanced quotes\n");
     return PARSE_BAD_INPUT;
   }
   if (*str != '\0') {

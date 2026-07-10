@@ -11,18 +11,18 @@
 
 int main(int argc, char** argv) {
   if (!ShellLoop()) {
-    printf("Koopa exited with failure\n");
+    fprintf(stdout, "Koopa exited with failure\n");
     return EXIT_FAILURE;
   }
-  printf("Koopa exited with success\n");
+  fprintf(stdout, "Koopa exited with success\n");
   return EXIT_SUCCESS;
 }
 
 bool ShellLoop() {
   char* curr_dir;
   char* line;
-  char** args;
-  int num_args;
+  char** tokens;
+  int num_tokens;
 
   while (true) {
     // DISPLAY
@@ -43,32 +43,29 @@ bool ShellLoop() {
     }
 
     // TOKENIZE AND PARSE
-    ParseResult token_res = TokenizeLine(line, &args, &num_args);
+    ParseResult token_res = TokenizeLine(line, &tokens, &num_tokens);
     if (token_res != PARSE_OK) {
       free(line);
       if (token_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      fprintf(stderr, ERROR " argument missing balanced quotes\n");
       continue;
     }
-    Command* cmd;
-    ParseResult parse_res = ParseLine(args, num_args, &cmd);
+    CommandChain* chain;
+    ParseResult parse_res = ParseCommandChain(tokens, num_tokens, &chain);
     if (parse_res != PARSE_OK) {
       free(line);
-      free(args);
+      free(tokens);
       if (parse_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      fprintf(stderr, ERROR" expected file name for i/o redirection\n");
+      
       continue;
     }
-
-    // EXECUTE COMMANDS
-    ShellStatus status = Execute(cmd);
     free(line);
-    free(args);
-    free(cmd);
+    free(tokens);
+    ShellStatus status = Execute(chain);
+    CommandChain_Free(chain);
     if (status == SHELL_EXIT) {
       break;
     }

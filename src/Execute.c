@@ -20,31 +20,29 @@ static int last_exit_code = 0;
 
 //*****************Built-ins************************/
 
-// Changes directory to the directory specified at args[1]. If 
-// args[1] == NULL, then an error message is printed to stderr.
-// Otherwise, an attempted directory change occurs. If the attempt fails,
-// an error is printed to stderr. This function always returns SHELL_CONTINUE.
-static ShellStatus KpaCd(char** args) {
-  if (args[1] == NULL) {
-    fprintf(stderr, ERROR" expected directory for cd\n");
-  } else {
+// TODO : Rewrite function spec
+// TODO : change error handling in then block. maybe use perror instead of the literal you have in there
+static int KpaCd(char** args) {
+  if (args[1] != NULL) {
     if (chdir(args[1]) != 0) {
-      fprintf(stderr, ERROR " %s\n", strerror(errno));
+      perror("kpa: failed to change directory");
+      return EXIT_FAILURE;
     }
   }
-  return SHELL_CONTINUE;
+  return EXIT_SUCCESS;
 }
 
-// Returns SHELL_EXIT, signalling that the user is done 
-// using the shell.
-static ShellStatus KpaExit(char** args) {
-  return SHELL_EXIT;
+// Prints the exit code of the last executed command to stdout, similar
+// to bash's $?. Always returns EXIT_SUCCESS.
+static int KpaStatus(char** args) {
+  fprintf(stdout, "%d\n", last_exit_code);
+  return EXIT_SUCCESS;
 }
 
 // An array of strings that map to the names of built-in kpa functions.
 static char* BuiltInsStrs[] = {
-	"exit",
-	"cd"
+	"cd",
+  "status"
 };
 
 // Returns the number of built-in functions.
@@ -53,9 +51,9 @@ static int NumBuiltIns() {
 }
 
 // An array of function pointers built-in functions.
-static ShellStatus (*built_ins[])(char**) = {
-  &KpaExit,
-  &KpaCd
+static int (*built_ins[])(char**) = {
+  &KpaCd,
+  &KpaStatus
 };
 //************************************************/
 
@@ -86,16 +84,10 @@ static void Redirect(Command* cmd) {
   }
 }
 
-// Static helper that supports fork/exec logic for "standard" commands.
-// Forks a child process. The child redirects i/o (if needed), then calls execvp
-// to begin execution of a new program specificed by cmd->args[0]. An error message 
-// prints to stderr if execvp fails, and depending on the value of errno, will exit
-// with failure or with a special "command not found" macro. 
-// If fork fails, -1 is returned.
-// The parent process waits for the child process to either exit normally (whether via success or failure),
-// or be terminated by an uncaught signal. If the child process exited normally, the status is returned to the caller,
-// otherwise, -1 is returned.
-// This function never assumes responsibility for "cmd".
+// Forks a child process and execs the command specified by cmd->args[0],
+// with I/O redirection applied before exec. The parent waits for the child
+// to terminate and returns its exit code via WEXITSTATUS. Returns -1 if
+// fork fails or the child was killed by a signal rather than exiting normally.
 static int StandardLaunch(Command* cmd) {
   pid_t pid;
   int status;
@@ -105,7 +97,7 @@ static int StandardLaunch(Command* cmd) {
     Redirect(cmd);
     if (execvp(cmd->args[0], cmd->args) == -1) {
       if (errno == ENOENT) {
-        fprintf(stderr, ERROR" %s: command not found\n", cmd->args[0]);
+        fprintf(stderr, "kpa: %s: command not found\n", cmd->args[0]);
         exit(COMMAND_NOT_FOUND_EXIT_CODE);
       } else {
         perror("execvp failed in LaunchStandard");
@@ -130,18 +122,43 @@ static int StandardLaunch(Command* cmd) {
   return -1;
 }
 
-ShellStatus Execute(Command* cmd) {
-  if (cmd->args[0] == NULL) {
-    return SHELL_CONTINUE;
-  }
+// Routes a Command to the appropriate built-in handler or StandardLaunch.
+// Returns the exit code of whichever handler runs.
+static int Launch(Command* cmd) {
   int n = NumBuiltIns();
   for (int i = 0; i < n; i++) {
     if (strcmp(cmd->args[0], BuiltInsStrs[i]) == 0) {
-      return (*built_ins[i])(cmd->args);
+        return (*built_ins[i])(cmd->args);
     }
   }
-  int exit_code = StandardLaunch(cmd);
-  last_exit_code = exit_code;  // For future use when the shell supports conditional operators
+  return StandardLaunch(cmd);
+}
+
+ShellStatus Execute(CommandChain* chain) {
+  Command* cmd = chain->head;
+  while (cmd != NULL) {
+    int exit_code;
+    CondOpInfo op = cmd->cond_op;
+    if (last_exit_code == 0) {
+      // the previous command successful
+      if (op == OP_AND || op == OP_SEP || op == OP_NONE) {
+        if (strcmp(cmd->args[0], "exit") == 0) {
+          return SHELL_EXIT;
+        }
+        exit_code = Launch(cmd);
+        last_exit_code = exit_code;
+      }
+    } else {
+      if (op == OP_OR || op == OP_SEP || op == OP_NONE) {
+        if (strcmp(cmd->args[0], "exit") == 0) {
+          return SHELL_EXIT;
+        }
+        exit_code = Launch(cmd);
+        last_exit_code = exit_code;
+      }
+    }
+    cmd = (Command*) cmd->next;
+  }
   return SHELL_CONTINUE;
 }
 
