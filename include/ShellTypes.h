@@ -42,6 +42,11 @@ typedef enum {
   PARSE_SYSTEM_ERROR
 } ParseResult;
 
+// Represents the conditional operator preceding a Command in a CommandChain.
+// OP_NONE: no operator; first command in a chain or a standalone command.
+// OP_AND: run this command only if the previous command succeeded (exit code 0).
+// OP_OR: run this command only if the previous command failed (exit code nonzero).
+// OP_SEP: run this command unconditionally (;).
 typedef enum {
   OP_NONE,
   OP_OR,
