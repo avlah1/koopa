@@ -6,12 +6,9 @@
 #include "Colors.h"
 #include "ShellTypes.h"
 
-// Based on a tokenized list of args, either spawns child processe(s) OR launches a
-// built-in function that does not require forking.
-// This function should not be called if the first argument in "args" is NULL.
-// This function handles piping and i/o redirection accordingly.
-// This function does not ever gain ownership of "args". Returns true 
-// if the child processe(s) exited successfully, otherwise returns false.
+// Walks a CommandChain and executes each Command according to its cond_op,
+// skipping commands whose conditions are not met based on last_exit_code. Updates last _exit_code after
+// each command that runs. Returns SHELL_EXIT if the exit buiilt-in is encountered, SHELL_CONTINUE otherwise.
 ShellStatus Execute(CommandChain* chain);
 
 #endif  // EXECUTE_H_
