@@ -9,22 +9,13 @@
 #include "ShellTypes.h"
 #include "CommandChain.h"
 
-// Function spec incoming. This function keeps changing as more functionality 
-// is added. I am holding off on writing a description for it for now.
+// TODO: function spec, holding off on it for now since this function keeps changing.
 bool ShellLoop();
 
-// Gets the absolute file path of the current working directory, and stores
-// it as a newly heap-allocated C-string. A pointer to the string is placed 
-// in the return parameter "path_ret". The caller assumes responsibility of 
-// this heap-allocated memory if and only if the function returns true.
-// Arguments:
-// - path_ret: the return parameter where the C-string path name is placed. 
-//   Only valid if the function returns true; caller owns this memory and is
-//   responsible for freeing it.
-// Returns:
-// - true if successful
-// - false if a system failure occurs while getting/allocating the C-string
-//   path name (eg, malloc fail).
+// Retrieves the current working directory into a heap-allocated buffer, doubling
+// the buffer size and retrying if the path exceeds initial buffer size. The caller
+// owns the returned string and is responsible for freeing it. Returns false
+// if allocation fails.
 bool GetCurrentDir(char** path_ret);
 
 #endif  // KOOPA_H_
