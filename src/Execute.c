@@ -25,13 +25,15 @@ static int last_exit_code = 0;
 static int KpaCd(char** args) {
   if (args[1] != NULL) {
     if (chdir(args[1]) != 0) {
-      fprintf(stderr, COLOR_RED "%s: %s" COLOR_END "\n", args[1], strerror(errno));
+      perror("kpa: failed to change directory");
       return EXIT_FAILURE;
     }
   }
   return EXIT_SUCCESS;
 }
 
+// Prints the exit code of the last executed command to stdout, similar
+// to bash's $?. Always returns EXIT_SUCCESS.
 static int KpaStatus(char** args) {
   fprintf(stdout, "%d\n", last_exit_code);
   return EXIT_SUCCESS;
@@ -82,16 +84,10 @@ static void Redirect(Command* cmd) {
   }
 }
 
-// Static helper that supports fork/exec logic for "standard" commands.
-// Forks a child process. The child redirects i/o (if needed), then calls execvp
-// to begin execution of a new program specificed by cmd->args[0]. An error message 
-// prints to stderr if execvp fails, and depending on the value of errno, will exit
-// with failure or with a special "command not found" macro. 
-// If fork fails, -1 is returned.
-// The parent process waits for the child process to either exit normally (whether via success or failure),
-// or be terminated by an uncaught signal. If the child process exited normally, the status is returned to the caller,
-// otherwise, -1 is returned.
-// This function never assumes responsibility for "cmd".
+// Forks a child process and execs the command specified by cmd->args[0],
+// with I/O redirection applied before exec. The parent waits for the child
+// to terminate and returns its exit code via WEXITSTATUS. Returns -1 if
+// fork fails or the child was killed by a signal rather than exiting normally.
 static int StandardLaunch(Command* cmd) {
   pid_t pid;
   int status;
@@ -101,7 +97,7 @@ static int StandardLaunch(Command* cmd) {
     Redirect(cmd);
     if (execvp(cmd->args[0], cmd->args) == -1) {
       if (errno == ENOENT) {
-        fprintf(stderr, ERROR" %s: command not found\n", cmd->args[0]);
+        fprintf(stderr, "kpa: %s: command not found\n", cmd->args[0]);
         exit(COMMAND_NOT_FOUND_EXIT_CODE);
       } else {
         perror("execvp failed in LaunchStandard");
@@ -126,6 +122,8 @@ static int StandardLaunch(Command* cmd) {
   return -1;
 }
 
+// Routes a Command to the appropriate built-in handler or StandardLaunch.
+// Returns the exit code of whichever handler runs.
 static int Launch(Command* cmd) {
   int n = NumBuiltIns();
   for (int i = 0; i < n; i++) {
@@ -133,7 +131,6 @@ static int Launch(Command* cmd) {
         return (*built_ins[i])(cmd->args);
     }
   }
-  // TODO: add logic for PipelineLaunch
   return StandardLaunch(cmd);
 }
 
