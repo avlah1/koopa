@@ -40,8 +40,10 @@ void CommandChain_Free(CommandChain* chain) {
 
 void CommandChain_FreeCommand(Command* cmd) {
   int num_args = cmd->num_args;
-  for (int i = 0; i < num_args; i++) {
-    free(cmd->args[i]);
+  if (cmd->args != NULL) {
+    for (int i = 0; i < num_args; i++) {
+      free(cmd->args[i]);
+    }
   }
   if (cmd->input_file != NULL) {
     free(cmd->input_file);
