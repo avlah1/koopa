@@ -11,10 +11,10 @@
 
 int main(int argc, char** argv) {
   if (!ShellLoop()) {
-    printf("Koopa exited with failure\n");
+    fprintf(stdout, "Koopa exited with failure\n");
     return EXIT_FAILURE;
   }
-  printf("Koopa exited with success\n");
+  fprintf(stdout, "Koopa exited with success\n");
   return EXIT_SUCCESS;
 }
 
@@ -49,11 +49,8 @@ bool ShellLoop() {
       if (token_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      fprintf(stderr, ERROR " argument missing balanced quotes\n");
       continue;
     }
-    // we will call ParseCommandChain
-      // can return PARSE_SYSTEM FAILURE PARSEOK OR PARSE_BADINPUT
     CommandChain* chain;
     ParseResult parse_res = ParseCommandChain(tokens, num_tokens, &chain);
     if (parse_res != PARSE_OK) {
@@ -62,7 +59,7 @@ bool ShellLoop() {
       if (parse_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      fprintf(stderr, COLOR_RED" expected filename for i/o redirection\n");
+      
       continue;
     }
     free(line);
