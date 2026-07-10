@@ -8,6 +8,7 @@
 #define BUFSIZE 256
 #define DELIMITERS " \n\t"
 #define DEBUG 0
+
 ReadResult ReadLine(char** line_ret) {
   size_t buffer_size = BUFSIZE;
   char* buffer = (char*) malloc(sizeof(char) * buffer_size);
@@ -40,7 +41,8 @@ ReadResult ReadLine(char** line_ret) {
   return READ_EOF;
 }
 
-
+// Maps a token string to its corresponding CondOpInfo enum value.
+// Returns OP_NONE if the token is not a conditional operator.
 static CondOpInfo GetCondOp(char* token) {
   if (strcmp(token, "&&") == 0) {
     return OP_AND;
@@ -52,13 +54,11 @@ static CondOpInfo GetCondOp(char* token) {
   return OP_NONE;
 }
 
+// Parses a single command from a token range into a heap-allocated Command struct.
+// Also handles an optional leading condtional operator (&& || ;), I/O operators
+// (<, >, >>), and compies remaining tokens into cmd->args via strdup.
+// The caller owns the returned Command and is responsible for freeing it.
 static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret) {
-  if (DEBUG) {
-    printf("\nIn ParseCommand, parsing %d tokens:\n", num_tokens);
-    for (int i = 0; i < num_tokens; i++) {
-      printf("token[%d]: %s\n", i, tokens[i]);
-    }
-  }
   Command* cmd = (Command*) calloc(1, sizeof(Command));
   if (cmd == NULL) {
     perror("calloc failed in ParseCommand");
@@ -71,14 +71,12 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
     perror("malloc failed in ParseCommand");
     return PARSE_SYSTEM_ERROR;
   }
-  // TODO: should we be checking if tokens[0] is NULL? 
   int i = 0, position = 0;
   CondOpInfo op = GetCondOp(tokens[i]);
   if (op != OP_NONE) {
-    // TODO: Bash shells prompt user for additional input! maybe we should do the same here?
     if (num_tokens == 1) {
       CommandChain_FreeCommand(cmd);
-      fprintf(stderr, ERROR" expected additional argument for conditional: %s\n", tokens[i]);
+      fprintf(stderr, "kpa: expected additional argument for conditional: %s\n", tokens[i]);
       return PARSE_BAD_INPUT;
     }
     i++;
@@ -87,6 +85,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
   while (i < num_tokens) {
     if ((strcmp(tokens[i], ">") == 0) || (strcmp(tokens[i], ">>")) == 0) {
       if (i == num_tokens - 1) {
+        fprintf(stderr, "kpa: expected filename for i/o redirection\n");
         CommandChain_FreeCommand(cmd);
         return PARSE_BAD_INPUT;
       }
@@ -115,9 +114,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
           return PARSE_SYSTEM_ERROR;
         }
       }
-    }
-    // NEED TO REALLOC JUST IN CASE???
-    
+    }    
   }
   args[cmd->num_args] = NULL;
   cmd->args = args;
@@ -126,12 +123,6 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
 }
 
 ParseResult ParseCommandChain(char** tokens, int num_tokens, CommandChain** chain_ret) {
-  if (DEBUG) {
-    printf("Parsing %d tokens\n", num_tokens);
-    for (int i = 0; i < num_tokens; i++) {
-      printf("token[%d]: %s\n", i, tokens[i]);
-    }
-  }
   CommandChain* chain;
   if (!CommandChain_Allocate(&chain)) {
     return PARSE_SYSTEM_ERROR;
@@ -162,17 +153,11 @@ ParseResult ParseCommandChain(char** tokens, int num_tokens, CommandChain** chai
   return PARSE_OK;
 }
 
-
-
-
-// Static helper that splits the C-string "str" at delimeters "delimeters", one at a time. 
-// Tokens are split with a '\0'.  If successful,
-// a pointer to a newly formed token is returned via the return parameter "token_ret".
-// A first call to this function should place the actual string to be tokenized at str.
-// For subsequent calls, NULL should be passed as "str".
-// This function returns:
-// - PARSE_OK when the end of the string "str" is reached (eg, a null character)
-// - PARSE_BAD_INPUT when a portion of "str" is unexpected (eg, unbalanced quotes)
+// Tokenizes a string in-place using strtok-style calling convention: pass the 
+// string to tokenize on the first call, then NULL on subsequent calls to get remaining
+// tokens. Handles single and double quotes: quoted sections suppress delimiter 
+// splitting and strip quote characters. Single and double quotes are tracked independently.
+// Returns PARSE_BAD_INPUT if unbalanced quotes are detected.
 static ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
   static char* next_token_start = NULL;
   // Check if this is the first call to this function and adjust str accordingly
@@ -237,6 +222,7 @@ static ParseResult GetToken(char* str, char** token_ret, char* delimiters) {
     } 
   }
   if (state != QUOTE_NONE) {
+    fprintf(stderr, "kpa: argument missing balanced quotes\n");
     return PARSE_BAD_INPUT;
   }
   if (*str != '\0') {
