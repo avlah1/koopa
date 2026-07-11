@@ -20,8 +20,9 @@ static int last_exit_code = 0;
 
 //*****************Built-ins************************/
 
-// TODO : Rewrite function spec
-// TODO : change error handling in then block. maybe use perror instead of the literal you have in there
+// Changes the current working directory to args[1]. Returns EXIT_FAILURE
+// and prints an error if chdir fails, or EXIT_SUCCESS if no directory
+// was provided or the change succeeded.
 static int KpaCd(char** args) {
   if (args[1] != NULL) {
     if (chdir(args[1]) != 0) {
@@ -88,7 +89,7 @@ static void Redirect(Command* cmd) {
 // with I/O redirection applied before exec. The parent waits for the child
 // to terminate and returns its exit code via WEXITSTATUS. Returns -1 if
 // fork fails or the child was killed by a signal rather than exiting normally.
-static int StandardLaunch(Command* cmd) {
+static int StandardExecute(Command* cmd) {
   pid_t pid;
   int status;
   pid = fork();
@@ -122,30 +123,77 @@ static int StandardLaunch(Command* cmd) {
   return -1;
 }
 
+static int PipedExecute(Command* cmd) {
+  
+  /*
+  int prev_read
+  pid_t pids[num_commands];
+
+  for every command in piped command list
+    int pipefd[2]
+    if not last command
+      pipe(pipefd)
+    pid_t pid = fork()
+    pids[i] = pid;
+    if child
+      if not first
+        stdin to prev_read
+        close(prev_read)
+      if not last
+        stdout to pipefd[1]
+        close(pipefd[0])
+        close(pipefd[1])
+      exec
+    else (parent)
+      if not first
+        close(prev_read)
+      if not last
+        prev_read = pipefd[0]
+         close(pipe[1])
+      
+  for every pid in pids
+    waitpid(pids[i], &status, 0)
+  
+  */
+ return 0;
+}
+
+static int PipedLaunch(Command* cmd, Command** cmd_ret) {
+
+  return PipedExecute(cmd);
+}
+
 // Routes a Command to the appropriate built-in handler or StandardLaunch.
 // Returns the exit code of whichever handler runs.
-static int Launch(Command* cmd) {
+static int StandardLaunch(Command* cmd) {
   int n = NumBuiltIns();
   for (int i = 0; i < n; i++) {
     if (strcmp(cmd->args[0], BuiltInsStrs[i]) == 0) {
         return (*built_ins[i])(cmd->args);
     }
   }
-  return StandardLaunch(cmd);
+  return StandardExecute(cmd);
 }
 
-ShellStatus Execute(CommandChain* chain) {
+
+ShellStatus Launch(CommandChain* chain) {
   Command* cmd = chain->head;
   while (cmd != NULL) {
     int exit_code;
-    CondOpInfo op = cmd->cond_op;
+    OpInfo op = cmd->op;
     if (last_exit_code == 0) {
       // the previous command successful
-      if (op == OP_AND || op == OP_SEP || op == OP_NONE) {
+      if (op == OP_PIPE) {
+        Command* next_cmd;
+        exit_code = PipedLaunch(cmd, &next_cmd);
+        last_exit_code = exit_code;
+        cmd = next_cmd;
+      }
+      else if (op == OP_AND || op == OP_SEP || op == OP_NONE) {
         if (strcmp(cmd->args[0], "exit") == 0) {
           return SHELL_EXIT;
         }
-        exit_code = Launch(cmd);
+        exit_code = StandardLaunch(cmd);
         last_exit_code = exit_code;
       }
     } else {
@@ -153,7 +201,7 @@ ShellStatus Execute(CommandChain* chain) {
         if (strcmp(cmd->args[0], "exit") == 0) {
           return SHELL_EXIT;
         }
-        exit_code = Launch(cmd);
+        exit_code = StandardLaunch(cmd);
         last_exit_code = exit_code;
       }
     }
