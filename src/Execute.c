@@ -123,44 +123,81 @@ static int StandardExecute(Command* cmd) {
   return -1;
 }
 
-static int PipedExecute(Command* cmd) {
-  
-  /*
-  int prev_read
-  pid_t pids[num_commands];
 
-  for every command in piped command list
-    int pipefd[2]
-    if not last command
-      pipe(pipefd)
-    pid_t pid = fork()
+
+static int PipedExecute(Command* cmd, int num_cmds) {
+  int status;
+  bool first, last;
+  pid_t pids[num_cmds];
+  Command* curr = cmd;
+   int prev_read = -1;
+  for (int i = 0; i < num_cmds; i++) {
+    int pipefd[2];
+    first = (i == 0);
+    last = (i == num_cmds - 1);
+    if (!last) {
+      // pipe
+      if (pipe(pipefd) == -1) {
+        perror("pipe failed in PipedExecute");
+        return EXIT_FAILURE;
+      }
+    }
+    pid_t pid = fork();
     pids[i] = pid;
-    if child
-      if not first
-        stdin to prev_read
-        close(prev_read)
-      if not last
-        stdout to pipefd[1]
-        close(pipefd[0])
-        close(pipefd[1])
-      exec
-    else (parent)
-      if not first
-        close(prev_read)
-      if not last
-        prev_read = pipefd[0]
-         close(pipe[1])
-      
-  for every pid in pids
-    waitpid(pids[i], &status, 0)
-  
-  */
- return 0;
+    if (pid == 0) {
+      Redirect(curr);
+      if (!first) {
+        // not first
+        dup2(prev_read, STDIN_FILENO);
+        close(prev_read);
+      }
+      if (!last) {
+        // not last
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+      }
+      // exec
+      if (execvp(curr->args[0], curr->args) == -1) {
+        if (errno == ENOENT) {
+          fprintf(stderr, "kpa: %s: command not found\n", cmd->args[0]);
+          exit(COMMAND_NOT_FOUND_EXIT_CODE);
+        } else {
+          perror("execvp failed in LaunchStandard");
+          exit(EXIT_FAILURE);
+        }
+      }
+    } else if (pid < 0) {
+      perror("fork failed in PipedExecute");
+      for (int j = 0; j < i; j++) {
+        waitpid(pids[j], NULL, 0);
+      }
+      return -1;
+    } else {
+      // parent
+      if (!first) {
+        close(prev_read);
+      }
+      if (!last) {
+        prev_read = pipefd[0];
+        close(pipefd[1]);
+      }
+      curr = curr->next;
+    }
+  }
+
+ for (int i = 0; i < num_cmds; i++) waitpid(pids[i], &status, 0);
+
+ if (WIFEXITED(status)) {
+  return WEXITSTATUS(status);
+ }
+
+ return -1;
 }
 
 static int PipedLaunch(Command* cmd, Command** cmd_ret) {
 
-  return PipedExecute(cmd);
+  return PipedExecute(cmd, 1);
 }
 
 // Routes a Command to the appropriate built-in handler or StandardLaunch.
@@ -183,18 +220,12 @@ ShellStatus Launch(CommandChain* chain) {
     OpInfo op = cmd->op;
     if (last_exit_code == 0) {
       // the previous command successful
-      if (op == OP_PIPE) {
-        Command* next_cmd;
-        exit_code = PipedLaunch(cmd, &next_cmd);
-        last_exit_code = exit_code;
-        cmd = next_cmd;
-      }
-      else if (op == OP_AND || op == OP_SEP || op == OP_NONE) {
+      if (op == OP_AND || op == OP_SEP || op == OP_NONE) {
         if (strcmp(cmd->args[0], "exit") == 0) {
           return SHELL_EXIT;
         }
+        last_exit_code = (exit_code == -1) ? 1 : exit_code;
         exit_code = StandardLaunch(cmd);
-        last_exit_code = exit_code;
       }
     } else {
       if (op == OP_OR || op == OP_SEP || op == OP_NONE) {
@@ -202,9 +233,10 @@ ShellStatus Launch(CommandChain* chain) {
           return SHELL_EXIT;
         }
         exit_code = StandardLaunch(cmd);
-        last_exit_code = exit_code;
+        last_exit_code = (exit_code == -1) ? 1 : exit_code;
       }
     }
+    
     cmd = (Command*) cmd->next;
   }
   return SHELL_CONTINUE;
