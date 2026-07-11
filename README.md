@@ -4,7 +4,8 @@ A Unix shell written from scratch in C, built to deepen my understanding of syst
 
 ## Features:
 - Execute standard Unix commands
-- Built-in commands include cd and exit 
+- Built-in commands include cd, status, and exit 
+- Conditional operator support
 - I/O redirection using <, >, and >>
 - Single and double quoted input
 - Robust error handling
