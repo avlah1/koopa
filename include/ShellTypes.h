@@ -51,8 +51,9 @@ typedef enum {
   OP_NONE,
   OP_OR,
   OP_AND,
-  OP_SEP
-} CondOpInfo;
+  OP_SEP,
+  OP_PIPE
+} OpInfo;
 
 
 // Represents a single parsed command, ready for execution.
@@ -70,7 +71,7 @@ typedef struct {
   char* input_file;
   char* output_file;
   struct Command* next;
-  CondOpInfo cond_op;
+  OpInfo op;
   int num_args;
   bool append;
 } Command;
