@@ -43,7 +43,7 @@ ReadResult ReadLine(char** line_ret) {
 
 // Maps a token string to its corresponding CondOpInfo enum value.
 // Returns OP_NONE if the token is not a conditional operator.
-static CondOpInfo GetCondOp(char* token) {
+static OpInfo GetCondOp(char* token) {
   if (strcmp(token, "&&") == 0) {
     return OP_AND;
   } else if (strcmp(token, "||") == 0) {
@@ -72,7 +72,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
     return PARSE_SYSTEM_ERROR;
   }
   int i = 0, position = 0;
-  CondOpInfo op = GetCondOp(tokens[i]);
+  OpInfo op = GetCondOp(tokens[i]);
   if (op != OP_NONE) {
     if (num_tokens == 1) {
       CommandChain_FreeCommand(cmd);
@@ -81,7 +81,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
     }
     i++;
   }
-  cmd->cond_op = op;
+  cmd->op = op;
   while (i < num_tokens) {
     if ((strcmp(tokens[i], ">") == 0) || (strcmp(tokens[i], ">>")) == 0) {
       if (i == num_tokens - 1) {
