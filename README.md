@@ -12,10 +12,12 @@ A Unix shell written from scratch in C, built to deepen my understanding of syst
 
 ## Features coming soon
 - Piping
-- Conditional operator support
 - Background execution
 
 ## Building/Installation
 - GCC (14+) and Make required, with C23 support
 - To build: make
 - To run: ./Koopa
+
+## Known Limitations
+- I/O redirection on middle commands in a pipeline is not supported
