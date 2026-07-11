@@ -64,7 +64,7 @@ bool ShellLoop() {
     }
     free(line);
     free(tokens);
-    ShellStatus status = Execute(chain);
+    ShellStatus status = Launch(chain);
     CommandChain_Free(chain);
     if (status == SHELL_EXIT) {
       break;
