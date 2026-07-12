@@ -72,7 +72,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
     return PARSE_SYSTEM_ERROR;
   }
   int i = 0, position = 0;
-  OpInfo op = GetCondOp(tokens[i]);
+  OpInfo op = GetCondOp(tokens[0]);
   if (op != OP_NONE) {
     if (num_tokens == 1) {
       CommandChain_FreeCommand(cmd);
@@ -81,8 +81,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
     }
     i++;
   }
-  cmd->op = op;
-  while (i < num_tokens) {
+   while (i < num_tokens) {
     if ((strcmp(tokens[i], ">") == 0) || (strcmp(tokens[i], ">>")) == 0) {
       if (i == num_tokens - 1) {
         fprintf(stderr, "kpa: expected filename for i/o redirection\n");
@@ -99,6 +98,9 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
       }
       cmd->input_file = strdup(tokens[i + 1]);
       i += 2;
+    } else if (strcmp(tokens[i], "|") == 0) {
+      cmd->pipe_next = true;
+      i++;
     } else {
       args[position] = strdup(tokens[i]);
       cmd->num_args++;
@@ -129,20 +131,29 @@ ParseResult ParseCommandChain(char** tokens, int num_tokens, CommandChain** chai
   }
   Command* cmd;
   ParseResult result;
-  int start = 0;
-  for (int i = 0; i < num_tokens; i++) {
+  int i = 0, start = 0;
+  while (i < num_tokens) {
+    bool pipe = strcmp(tokens[i], "|") == 0;
     if ((strcmp(tokens[i], "&&") == 0) ||
         (strcmp(tokens[i], "||") == 0) ||
-        (strcmp(tokens[i], ";") == 0)) {
-          result = ParseCommand(&tokens[start], i - start, &cmd);
+        (strcmp(tokens[i], ";") == 0) || pipe) {
+          // If the current token is a conditional operator, exclude it from this command.
+          // Otherwise, it is a pipe token, so include it with this command.
+          int range = pipe ? i - start + 1 : i - start;
+          result = ParseCommand(&tokens[start], range, &cmd);
           if (result != PARSE_OK) {
             CommandChain_Free(chain);
             return result;
-          } 
+          }
           CommandChain_Append(chain, cmd);
-          start = i;
+          // If the final token was a pipe, exclude it from the next command. 
+          // Otherwise, the final token is a conditional operator that needs
+          // to be included with the next command.
+          start = pipe ? i + 1 : i;  
     }
+    i++;
   }
+  // Parse the command that is terminated by NULL
   result = ParseCommand(&tokens[start], num_tokens - start, &cmd);
   if (result != PARSE_OK) {
     CommandChain_Free(chain);
