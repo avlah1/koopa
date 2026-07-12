@@ -62,7 +62,6 @@ bool ShellLoop() {
       }
       continue;
     }
-  
     free(line);
     free(tokens);
     ShellStatus status = Launch(chain);

@@ -123,8 +123,6 @@ static int StandardExecute(Command* cmd) {
   return -1;
 }
 
-
-
 static int PipedExecute(Command* cmd, int num_cmds) {
   int status;
   bool first, last;
