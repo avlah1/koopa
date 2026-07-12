@@ -51,6 +51,7 @@ bool ShellLoop() {
       }
       continue;
     }
+    
     CommandChain* chain;
     ParseResult parse_res = ParseCommandChain(tokens, num_tokens, &chain);
     if (parse_res != PARSE_OK) {
@@ -59,9 +60,9 @@ bool ShellLoop() {
       if (parse_res == PARSE_SYSTEM_ERROR) {
         return false;
       }
-      
       continue;
     }
+  
     free(line);
     free(tokens);
     ShellStatus status = Launch(chain);
