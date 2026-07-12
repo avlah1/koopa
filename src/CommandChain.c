@@ -72,14 +72,20 @@ void CommandChain_PrintChain(CommandChain* chain) {
       printf("false\n");
     }
     printf("cond op: ");
-    if (curr->op == OP_AND) {
+    if (curr->cond_op == OP_AND) {
       printf("and\n");
-    } else if (curr->op == OP_OR) { 
+    } else if (curr->cond_op == OP_OR) { 
       printf("or\n");
-    } else if (curr->op == OP_SEP) {
+    } else if (curr->cond_op == OP_SEP) {
       printf("unconditional\n");
     } else {
        printf("none\n");
+    }
+    printf("piped: ");
+    if (curr->pipe_next) {
+      printf("true\n");
+    } else {
+      printf("false\n");
     }
     curr = (Command*) curr->next;
   }
