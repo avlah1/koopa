@@ -21,3 +21,4 @@ A Unix shell written from scratch in C, built to deepen my understanding of syst
 
 ## Known Limitations
 - I/O redirection on middle commands in a pipeline is not supported
+- Colored output to distinguish directories from files, grepped text, etc.
