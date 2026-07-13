@@ -51,7 +51,7 @@ typedef enum {
   OP_NONE,
   OP_OR,
   OP_AND,
-  OP_SEP
+  OP_SEP,
 } CondOpInfo;
 
 
@@ -72,6 +72,7 @@ typedef struct {
   struct Command* next;
   CondOpInfo cond_op;
   int num_args;
+  bool pipe_next;
   bool append;
 } Command;
 

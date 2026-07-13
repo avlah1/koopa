@@ -81,6 +81,12 @@ void CommandChain_PrintChain(CommandChain* chain) {
     } else {
        printf("none\n");
     }
+    printf("piped: ");
+    if (curr->pipe_next) {
+      printf("true\n");
+    } else {
+      printf("false\n");
+    }
     curr = (Command*) curr->next;
   }
 }
