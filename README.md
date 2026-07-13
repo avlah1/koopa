@@ -1,6 +1,6 @@
 # Koopa
 
-A Unix shell written from scratch in C, built to deepen my understanding of systems programming concepts like process management, I/O redirection, and parsing
+A Unix shell written from scratch in C, built to deepen my understanding of systems programming concepts like process management, I/O redirection, and parsing.
 
 ## Features:
 - Execute standard Unix commands
