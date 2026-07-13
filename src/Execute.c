@@ -231,6 +231,10 @@ ShellStatus Launch(CommandChain* chain) {
           exit_code = StandardLaunch(cmd);
         }
         last_exit_code = (exit_code == -1) ? 1 : exit_code;
+      } else {
+        while (cmd->pipe_next) {
+            cmd = (Command*) cmd->next;
+        }
       }
     } else {
       if (op == OP_OR || op == OP_SEP || op == OP_NONE) {
@@ -244,6 +248,10 @@ ShellStatus Launch(CommandChain* chain) {
           exit_code = StandardLaunch(cmd);
         }
         last_exit_code = (exit_code == -1) ? 1 : exit_code;
+      } else {
+        while (cmd->pipe_next) {
+            cmd = (Command*) cmd->next;
+        }
       }
     }
     cmd = (Command*) cmd->next;
