@@ -123,6 +123,13 @@ static int StandardExecute(Command* cmd) {
   return -1;
 }
 
+// Executes a pipeline of num_cmds commands connected by Unix pipes. Forks one
+// child per command, wiring stdout -> pipe write end for all but the last command,
+// and stdin -> pipe read end for all but the first command. Each child applies I/O
+// redirection via Redirect() before exec. The parent closes pipe ends
+// as long as they are no longer needed after each fork. All children are waited
+// for after the fork loop. Returns the exit code of the last command in the pipeline
+// or -1 if fork fails or the last child was killed by a signal.
 static int PipedExecute(Command* cmd, int num_cmds) {
   int status;
   bool first, last;
@@ -133,6 +140,7 @@ static int PipedExecute(Command* cmd, int num_cmds) {
     int pipefd[2];
     first = (i == 0);
     last = (i == num_cmds - 1);
+    // Only create a new pipe if this isn't the last piped command
     if (!last) {
       if (pipe(pipefd) == -1) {
         perror("pipe failed in PipedExecute");
@@ -144,10 +152,12 @@ static int PipedExecute(Command* cmd, int num_cmds) {
     if (pid == 0) {
       // Child process
       Redirect(curr);
+        // Only redirect stdin if not the first piped command
         if (!first) {
           dup2(prev_read, STDIN_FILENO);
           close(prev_read);
         }
+        // Only redirect output to pipe if not the last piped command
         if (!last) {
           dup2(pipefd[1], STDOUT_FILENO);
           close(pipefd[0]);
@@ -164,7 +174,7 @@ static int PipedExecute(Command* cmd, int num_cmds) {
         }
     } else if (pid < 0) {
       perror("fork failed in PipedExecute");
-      // Wait for the children that have been spawned so far
+      // Wait for the children that have been spawned so far, if any.
       for (int j = 0; j < i; j++) {
         waitpid(pids[j], NULL, 0);
       }
@@ -174,6 +184,7 @@ static int PipedExecute(Command* cmd, int num_cmds) {
       if (!first) {
         close(prev_read);
       }
+      // Save the read end of the pipe so it can be used in the next child process.
       if (!last) {
         prev_read = pipefd[0];
         close(pipefd[1]);
@@ -181,6 +192,7 @@ static int PipedExecute(Command* cmd, int num_cmds) {
       curr = (Command*) curr->next;
     }
   }
+  // Wait for all children we have spawned
   for (int i = 0; i < num_cmds; i++) waitpid(pids[i], &status, 0);
   if (WIFEXITED(status)) {
     return WEXITSTATUS(status);
@@ -188,6 +200,11 @@ static int PipedExecute(Command* cmd, int num_cmds) {
   return -1;
 }
 
+// Counts the number of commands in a pipeline starting at cmd by walking the chain
+// until pipe_next is false, then calls PipedExecute. Sets cmd_ret to the last command
+// in the pipeline so the caller knows where to resume walking the CommandChain after
+// pipeline completes.
+// Returns exit code of pipeline from PipedExecute.
 static int PipedLaunch(Command* cmd, Command** cmd_ret) {
   Command* curr = cmd;
   int num_piped = 1;
@@ -237,6 +254,7 @@ ShellStatus Launch(CommandChain* chain) {
         }
       }
     } else {
+      // previous command was unsuccessful
       if (op == OP_OR || op == OP_SEP || op == OP_NONE) {
         if (strcmp(cmd->args[0], "exit") == 0) {
           return SHELL_EXIT;

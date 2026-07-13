@@ -4,7 +4,6 @@
 
 #include "../include/InputHandler.h"
 
-
 #define BUFSIZE 256
 #define DELIMITERS " \n\t"
 #define DEBUG 0
@@ -72,7 +71,8 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
     return PARSE_SYSTEM_ERROR;
   }
   int i = 0, position = 0;
-  // Check if the first token is a conditional operator. If it is, 
+  // Check if the first token is a conditional operator. If it is, move i forward by one
+  // so we don't copy this into the args list for the command.
   CondOpInfo op = GetCondOp(tokens[0]);
   if (op != OP_NONE) {
     if (num_tokens == 1) {
@@ -84,6 +84,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
   }
   cmd->cond_op = op;
    while (i < num_tokens) {
+    // I/O redirection
     if ((strcmp(tokens[i], ">") == 0) || (strcmp(tokens[i], ">>")) == 0) {
       if (i == num_tokens - 1) {
         fprintf(stderr, "kpa: expected filename for i/o redirection\n");
@@ -99,6 +100,8 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
         return PARSE_BAD_INPUT;
       }
       cmd->input_file = strdup(tokens[i + 1]);
+      // Moving i forward by 2 allows for us to skip adding both the operator
+      // and the file name to the args list for the command.
       i += 2;
     } else if (strcmp(tokens[i], "|") == 0) {
       cmd->pipe_next = true;
@@ -120,6 +123,7 @@ static ParseResult ParseCommand(char** tokens, int num_tokens, Command** cmd_ret
       }
     }    
   }
+  // Null terminate, assign args, and return
   args[cmd->num_args] = NULL;
   cmd->args = args;
   *cmd_ret = cmd;
