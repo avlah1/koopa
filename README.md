@@ -10,10 +10,6 @@ A Unix shell written from scratch in C, built to deepen my understanding of syst
 - Single and double quoted input
 - Robust error handling
 
-## Features coming soon
-- Piping
-- Background execution
-
 ## Building/Installation
 - GCC (14+) and Make required, with C23 support
 - To build: make
@@ -22,3 +18,5 @@ A Unix shell written from scratch in C, built to deepen my understanding of syst
 ## Known Limitations
 - I/O redirection on middle commands in a pipeline is not supported
 - Colored output to distinguish directories from files, grepped text, etc.
+- Background process functionality
+- Variable expansion functionality
