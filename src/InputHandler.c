@@ -143,13 +143,14 @@ ParseResult ParseCommandChain(char** tokens, int num_tokens, CommandChain** chai
     if ((strcmp(tokens[i], "&&") == 0) ||
         (strcmp(tokens[i], "||") == 0) ||
         (strcmp(tokens[i], ";") == 0) || pipe) {
-          // If the current token is a conditional operator, exclude it from this command.
-          // Otherwise, it is a pipe token, so include it with this command.
+          // Check if a pipe is the final token in tokens, return bad input.
           if (pipe && i == num_tokens - 1) {
             fprintf(stderr, "kpa: expected additional args near \"|\"\n");
             CommandChain_Free(chain);
             return PARSE_BAD_INPUT;
           }
+          // If the current token is a conditional operator, exclude it from this command.
+          // Otherwise, it is a pipe token, so include it with this command.
           int range = pipe ? i - start + 1 : i - start;
           result = ParseCommand(&tokens[start], range, &cmd);
           if (result != PARSE_OK) {
