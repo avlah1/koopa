@@ -11,10 +11,10 @@
 
 int main(int argc, char** argv) {
   if (!ShellLoop()) {
-    fprintf(stdout, "Koopa exited with failure\n");
+    fprintf(stdout, "Koopa exited with failure!\n");
     return EXIT_FAILURE;
   }
-  fprintf(stdout, "Koopa exited with success\n");
+  fprintf(stdout, "Koopa exited with success!\n");
   return EXIT_SUCCESS;
 }
 
