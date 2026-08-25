@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -std=c23
+CFLAGS = -g -Wall -std=c11 -D_POSIX_C_SOURCE=200809L
 
 TARGET = Koopa
 SRCS = $(wildcard src/*.c)
